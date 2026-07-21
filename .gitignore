@@ -1,0 +1,20 @@
+# Secrets -- never commit real credentials
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+venv/
+.venv/
+
+# OS noise
+.DS_Store
+
+# Generated data -- sample_feedback.csv is committed on purpose (it's the
+# test dataset), but real processed output and test artifacts are not.
+data/processed_feedback.jsonl
+data/test_*.jsonl
+outputs/*.md
+!outputs/.gitkeep
