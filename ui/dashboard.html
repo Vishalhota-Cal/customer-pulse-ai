@@ -57,6 +57,7 @@
     cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease;
   }
   .refresh-btn:hover { background: #222941; border-color: rgba(255,255,255,0.15); }
+  .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
   .pulse-strip { height: 64px; overflow: hidden; border-bottom: 1px solid var(--border); background: var(--surface); }
   .pulse-strip svg { width: 100%; height: 100%; display: block; }
@@ -67,9 +68,9 @@
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.9rem; line-height: 1.25;
     margin: 0 0 10px 0; letter-spacing: -0.015em;
   }
-  .hero-subtitle { color: var(--muted); font-size: 0.98rem; max-width: 680px; margin: 0 0 36px 0; line-height: 1.55; }
+  .hero-subtitle { color: var(--muted); font-size: 0.98rem; max-width: 680px; margin: 0 0 8px 0; line-height: 1.55; }
 
-  .vitals-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 36px; }
+  .vitals-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
   .vital-tile {
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
     padding: 18px 20px; position: relative; overflow: hidden;
@@ -91,6 +92,10 @@
     font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.95rem; margin: 0 0 4px 0;
   }
   .card-subtitle { color: var(--muted); font-size: 0.82rem; margin: 0 0 18px 0; }
+  .card-subtitle code {
+    font-family: 'IBM Plex Mono', monospace; background: var(--surface-2); padding: 1px 6px;
+    border-radius: 5px; color: var(--pulse); font-size: 0.8rem;
+  }
   .summary-text { line-height: 1.7; font-size: 0.98rem; color: #D5DAE5; white-space: pre-wrap; }
 
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -121,14 +126,7 @@
   .flagged-item .flagged-text { font-size: 0.88rem; color: var(--text); margin-bottom: 6px; }
   .flagged-item .flagged-reason { font-size: 0.78rem; color: var(--muted); font-style: italic; }
 
-  .empty-state {
-    text-align: center; padding: 50px 20px; color: var(--muted);
-  }
-  .empty-state .empty-title { font-family: 'Sora', sans-serif; color: var(--text); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
-  .empty-state code {
-    font-family: 'IBM Plex Mono', monospace; background: var(--surface-2); padding: 2px 8px;
-    border-radius: 6px; color: var(--pulse); font-size: 0.85rem;
-  }
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
   .error-banner {
     background: var(--negative-dim); border: 1px solid rgba(255,107,107,0.3); color: var(--negative);
     padding: 14px 18px; border-radius: 12px; font-size: 0.88rem; line-height: 1.5;
@@ -141,16 +139,77 @@
   td.text-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #C7CDDA; }
   .table-scroll { max-height: 420px; overflow-y: auto; }
 
+  .manual-time-control {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+    padding: 10px 14px; background: var(--surface-2); border-radius: 10px;
+  }
+  .manual-time-control label { color: #C7CDDA; font-size: 0.85rem; }
+  .manual-time-control input[type="number"] {
+    width: 64px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem;
+  }
+  .impact-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .impact-bar-label { width: 160px; flex-shrink: 0; font-size: 0.84rem; color: #C7CDDA; }
+  .impact-bar-track { flex: 1; background: var(--surface-2); border-radius: 6px; height: 14px; overflow: hidden; }
+  .impact-bar-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+  .impact-bar-fill.manual { background: var(--faint); }
+  .impact-bar-fill.ai { background: var(--pulse); }
+  .impact-bar-value { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: var(--text); width: 100px; text-align: right; flex-shrink: 0; }
+  .impact-callout {
+    margin-top: 14px; padding: 12px 16px; background: var(--pulse-dim); border-radius: 10px;
+    color: var(--pulse); font-size: 0.88rem; font-weight: 600;
+  }
+
+  /* Filters */
+  .filters-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; align-items: end; }
+  .filter-field label { display: block; font-size: 0.72rem; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .filter-field input, .filter-field select {
+    width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.82rem;
+  }
+
+  /* Health score */
+  .health-score-card { display: flex; align-items: center; gap: 28px; }
+  .health-score-ring {
+    width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; font-size: 1.9rem; font-weight: 700;
+    border: 6px solid var(--score-color, var(--pulse));
+  }
+  .health-score-label { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 4px; }
+  .health-score-formula { color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+
+  /* Theme status */
+  .theme-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .theme-row .bar-label { width: 180px; }
+  .theme-status-select {
+    padding: 4px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); font-family: 'Inter', sans-serif; flex-shrink: 0;
+  }
+  .theme-status-select.status-open { color: var(--muted); }
+  .theme-status-select.status-in-progress { color: var(--amber); border-color: rgba(245,166,35,0.3); }
+  .theme-status-select.status-resolved { color: var(--pulse); border-color: rgba(52,229,195,0.3); }
+
+  @media print {
+    body { background: #fff; color: #000; }
+    .no-print { display: none !important; }
+    .card { background: #fff; border: 1px solid #ccc; box-shadow: none; page-break-inside: avoid; }
+    .pulse-strip, .header-bar { display: none !important; }
+    .vital-tile { border: 1px solid #ccc; }
+    .bar-label, .impact-bar-label { color: #333; }
+  }
+
   @media (max-width: 800px) {
     .vitals-row { grid-template-columns: repeat(2, 1fr); }
     .grid-2 { grid-template-columns: 1fr; }
     .bar-label { width: 130px; }
+    .filters-grid { grid-template-columns: repeat(2, 1fr); }
+    .health-score-card { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
 <body>
 
-  <div class="header-bar">
+  <div class="header-bar no-print">
     <div class="header-brand">
       <span class="live-dot"></span>
       <h1>PulseAI</h1>
@@ -158,59 +217,103 @@
     <div class="header-meta">
       <span id="last-updated-text">Not loaded yet</span>
       <button class="refresh-btn" onclick="loadDashboard()">Refresh</button>
+      <button class="refresh-btn" onclick="window.print()">Print / Save as PDF</button>
     </div>
   </div>
 
-  <!-- Signature element: a live heartbeat-style waveform. Its jaggedness
-       and color are driven by the REAL average sentiment score once data
-       loads (calmer teal line when sentiment is positive, sharper red
-       spikes when negative) -- not decorative, an actual data readout. -->
-  <div class="pulse-strip">
+  <div class="pulse-strip no-print">
     <svg id="pulse-svg" viewBox="0 0 1200 64" preserveAspectRatio="none">
       <path id="pulse-path" d="M0,32 L1200,32" stroke="#34E5C3" stroke-width="2" fill="none" opacity="0.6"/>
     </svg>
   </div>
 
   <main>
+    <div class="card no-print" id="upload-card">
+      <div class="card-title">Upload Feedback</div>
+      <div class="card-subtitle">Upload a CSV with a <code>text</code> column (optional <code>source</code> column) to process new feedback through the pipeline</div>
+      <input type="file" id="csv-file-input" accept=".csv" style="margin-bottom:12px; width:100%; padding:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text);" />
+      <button class="refresh-btn" id="upload-btn" onclick="uploadCsv()" disabled>Process CSV</button>
+      <button class="refresh-btn" style="margin-left:8px; color:var(--negative); border-color:rgba(255,107,107,0.3);" onclick="clearAllData()">Clear all data</button>
+      <div id="upload-status" style="margin-top:10px; font-size:0.85rem; color:var(--muted);"></div>
+    </div>
+
+    <div class="card no-print" id="filters-card">
+      <div class="card-title">Filters</div>
+      <div class="card-subtitle">Narrows every chart, score, and table below. Defaults to the last 7 days.</div>
+      <div class="filters-grid">
+        <div class="filter-field"><label>From</label><input type="date" id="filter-date-from" onchange="onFiltersChanged()" /></div>
+        <div class="filter-field"><label>To</label><input type="date" id="filter-date-to" onchange="onFiltersChanged()" /></div>
+        <div class="filter-field"><label>Category</label><select id="filter-category" onchange="onFiltersChanged()"></select></div>
+        <div class="filter-field"><label>Urgency</label><select id="filter-urgency" onchange="onFiltersChanged()"><option>All</option><option>Low</option><option>Medium</option><option>High</option></select></div>
+        <div class="filter-field"><label>Sentiment</label><select id="filter-sentiment" onchange="onFiltersChanged()"><option>All</option><option>Positive</option><option>Neutral</option><option>Negative</option></select></div>
+        <div class="filter-field"><label>Source</label><select id="filter-source" onchange="onFiltersChanged()"></select></div>
+      </div>
+      <div class="filters-grid" style="margin-top:10px; grid-template-columns: 3fr 1fr;">
+        <div class="filter-field"><label>Keyword (text or theme)</label><input type="text" id="filter-keyword" placeholder="e.g. checkout, crash, refund..." oninput="onFiltersChanged()" /></div>
+        <div class="filter-field"><label>&nbsp;</label><button class="refresh-btn" style="width:100%;" onclick="resetFilters()">Reset</button></div>
+      </div>
+    </div>
+
     <div class="hero-headline" id="hero-headline">Loading this week's pulse...</div>
     <div class="hero-subtitle" id="hero-subtitle"></div>
+    <div class="hero-subtitle" id="week-trend" style="font-size:0.88rem;"></div>
+
+    <div class="card health-score-card" id="health-score-card">
+      <div class="health-score-ring" id="health-score-ring">--</div>
+      <div>
+        <div class="health-score-label" id="health-score-label">Loading...</div>
+        <div class="health-score-formula">Formula: sentiment-based score (0-100), minus a penalty for the share of high-urgency items (up to -30) and flagged-for-review items (up to -10). Based on the currently filtered data.</div>
+      </div>
+    </div>
 
     <div class="vitals-row" id="vitals-row"></div>
 
     <div class="card">
+      <div class="card-title">Business Impact</div>
+      <div class="card-subtitle">Manual review time (your estimate, editable) vs. real, measured AI processing time</div>
+      <div class="manual-time-control no-print">
+        <label for="manual-minutes-input" style="margin:0;">Manual review assumption:</label>
+        <input type="number" id="manual-minutes-input" min="0.5" max="15" step="0.5" value="2" onchange="saveManualMinutes()" />
+        <span style="color:var(--muted); font-size:0.85rem;">min / feedback item</span>
+      </div>
+      <div id="business-impact-body"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">Weekly Summary</div>
-      <div class="card-subtitle">AI-generated narrative from everything processed this week</div>
+      <div class="card-subtitle">AI-generated narrative, real last-7-days window (independent of the filters above)</div>
       <div id="summary" class="summary-text">Loading...</div>
     </div>
 
     <div class="grid-2">
       <div class="card">
         <div class="card-title">Category Breakdown</div>
-        <div class="card-subtitle">What kind of feedback is coming in</div>
+        <div class="card-subtitle">What kind of feedback is coming in, filtered</div>
         <div id="categories"></div>
       </div>
       <div class="card">
         <div class="card-title">Sentiment Breakdown</div>
-        <div class="card-subtitle">Positive, neutral, or negative tone</div>
+        <div class="card-subtitle">Positive, neutral, or negative tone, filtered</div>
         <div id="sentiment"></div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-title">Top Themes</div>
-      <div class="card-subtitle">Recurring, specific issues across all feedback</div>
+      <div class="card-subtitle">Recurring, specific issues, filtered. Set a status to track what's being worked on.</div>
       <div id="themes"></div>
     </div>
 
     <div class="card">
       <div class="card-title">Flagged for Review</div>
-      <div class="card-subtitle">Low-confidence classifications or non-English content needing a human look</div>
+      <div class="card-subtitle">Low-confidence classifications or non-English content needing a human look, filtered</div>
       <div id="flagged"></div>
     </div>
 
     <div class="card">
       <div class="card-title">All Feedback</div>
       <div class="card-subtitle" id="table-subtitle"></div>
+      <button class="refresh-btn no-print" style="margin-bottom:12px;" onclick="exportFilteredCsv()">Export filtered results as CSV</button>
       <div class="table-scroll">
         <table>
           <thead>
@@ -223,61 +326,176 @@
   </main>
 
 <script>
-// API_BASE points at the local Flask server. This dashboard is a
-// standalone file (opened via file:// or a static host), not served by
-// Flask itself -- CORS on the API side (flask-cors) is what makes this
-// cross-origin fetch actually work in the browser.
 const API_BASE = "http://127.0.0.1:5000";
+const ALL_CATEGORIES = ["Bug / Technical Issue", "Billing / Payments", "Feature Request", "UX / Usability Complaint", "Customer Service Complaint", "Positive Feedback / Praise", "Performance / Speed", "Other / Uncategorised"];
 
 // Escaping helper: feedback text, AI summaries, and theme labels all
 // ultimately trace back to user-submitted text. Anything inserted via
-// innerHTML goes through this first, so a feedback item containing
-// something like "<img onerror=alert(1)>" renders as inert text instead
-// of executing.
+// innerHTML goes through this first.
 function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
 }
 
-function urgencyBadgeClass(urgency) {
-  if (urgency === "High") return "urg-high";
-  if (urgency === "Medium") return "urg-medium";
-  return "urg-low";
+function toDateOnly(d) { return new Date(d).toISOString().slice(0, 10); }
+
+// --- Manual minutes assumption (business impact) --------------------------
+const MANUAL_MINUTES_KEY = "pulseAiManualMinutesPerItem";
+function getManualMinutes() {
+  const stored = localStorage.getItem(MANUAL_MINUTES_KEY);
+  const parsed = stored ? parseFloat(stored) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
 }
-function sentimentBadgeClass(sentiment) {
-  if (sentiment === "Positive") return "sent-positive";
-  if (sentiment === "Negative") return "sent-negative";
-  return "sent-neutral";
+function saveManualMinutes() {
+  const input = document.getElementById("manual-minutes-input");
+  const val = parseFloat(input.value);
+  const clean = Number.isFinite(val) && val > 0 ? val : 2;
+  input.value = clean;
+  localStorage.setItem(MANUAL_MINUTES_KEY, String(clean));
+  renderAll();
+}
+function initManualMinutesInput() {
+  const input = document.getElementById("manual-minutes-input");
+  if (input) input.value = getManualMinutes();
 }
 
-function renderBarList(containerId, counts) {
-  const container = document.getElementById(containerId);
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  if (entries.length === 0) {
-    container.innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">No data yet.</p>';
+// --- Filters ---------------------------------------------------------------
+function initFilterInputs(records) {
+  const today = new Date();
+  const weekAgo = new Date(today.getTime() - 7 * 86400000);
+  document.getElementById("filter-date-from").value = toDateOnly(weekAgo);
+  document.getElementById("filter-date-to").value = toDateOnly(today);
+
+  const catSelect = document.getElementById("filter-category");
+  catSelect.innerHTML = `<option>All</option>` + ALL_CATEGORIES.map(c => `<option>${c}</option>`).join("");
+
+  const sources = Array.from(new Set(records.map(r => r.source))).sort();
+  const sourceSelect = document.getElementById("filter-source");
+  sourceSelect.innerHTML = `<option>All</option>` + sources.map(s => `<option>${escapeHtml(s)}</option>`).join("");
+}
+
+function getFilterValues() {
+  return {
+    dateFrom: document.getElementById("filter-date-from").value,
+    dateTo: document.getElementById("filter-date-to").value,
+    category: document.getElementById("filter-category").value,
+    urgency: document.getElementById("filter-urgency").value,
+    sentiment: document.getElementById("filter-sentiment").value,
+    source: document.getElementById("filter-source").value,
+    keyword: document.getElementById("filter-keyword").value.trim(),
+  };
+}
+
+function applyFilters(records, f) {
+  return records.filter(r => {
+    const dateOnly = toDateOnly(r.submitted_at);
+    if (f.dateFrom && dateOnly < f.dateFrom) return false;
+    if (f.dateTo && dateOnly > f.dateTo) return false;
+    if (f.category !== "All" && r.category !== f.category) return false;
+    if (f.urgency !== "All" && r.urgency !== f.urgency) return false;
+    if (f.sentiment !== "All" && r.sentiment !== f.sentiment) return false;
+    if (f.source !== "All" && r.source !== f.source) return false;
+    if (f.keyword) {
+      const kw = f.keyword.toLowerCase();
+      const inText = r.text.toLowerCase().includes(kw);
+      const inThemes = (r.themes || []).some(t => t.toLowerCase().includes(kw));
+      if (!inText && !inThemes) return false;
+    }
+    return true;
+  });
+}
+
+// Previous period: same length window immediately before the current
+// date range, with all NON-date filters still applied -- so the
+// week-over-week trend compares like-for-like, not an unfiltered baseline.
+function getPreviousPeriodRecords(allRecords, f) {
+  if (!f.dateFrom || !f.dateTo) return [];
+  const fromMs = new Date(f.dateFrom).getTime();
+  const toMs = new Date(f.dateTo).getTime();
+  const rangeMs = toMs - fromMs;
+  const prevTo = toDateOnly(fromMs - 86400000);
+  const prevFrom = toDateOnly(fromMs - rangeMs - 86400000);
+  return applyFilters(allRecords, { ...f, dateFrom: prevFrom, dateTo: prevTo });
+}
+
+function resetFilters() {
+  initFilterInputs(window.allRecords || []);
+  document.getElementById("filter-urgency").value = "All";
+  document.getElementById("filter-sentiment").value = "All";
+  document.getElementById("filter-keyword").value = "";
+  renderAll();
+}
+
+function onFiltersChanged() { renderAll(); }
+
+// --- Health score ------------------------------------------------------
+// Documented, non-black-box formula: sentiment maps to a 0-100 base,
+// then urgent-item ratio and flagged-item ratio each apply a penalty.
+function computeHealthScore(records) {
+  if (records.length === 0) return null;
+  const avgSentiment = records.reduce((s, r) => s + r.sentiment_score, 0) / records.length;
+  const urgentRatio = records.filter(r => r.urgency === "High").length / records.length;
+  const flaggedRatio = records.filter(r => r.flagged_for_review).length / records.length;
+  const base = ((avgSentiment + 1) / 2) * 100;
+  const score = Math.max(0, Math.min(100, base - urgentRatio * 30 - flaggedRatio * 10));
+  let label, color;
+  if (score >= 75) { label = "Healthy"; color = "var(--pulse)"; }
+  else if (score >= 50) { label = "Needs Attention"; color = "var(--amber)"; }
+  else { label = "Critical"; color = "var(--negative)"; }
+  return { score: Math.round(score), label, color };
+}
+
+function renderHealthScore(records) {
+  const ring = document.getElementById("health-score-ring");
+  const labelEl = document.getElementById("health-score-label");
+  const result = computeHealthScore(records);
+  if (!result) {
+    ring.textContent = "--";
+    ring.style.setProperty("--score-color", "var(--muted)");
+    labelEl.textContent = "No data in the current filter range";
     return;
   }
-  const max = Math.max(...entries.map(([, v]) => v));
-  container.innerHTML = entries.map(([label, count]) => {
-    const pct = max > 0 ? (count / max) * 100 : 0;
-    return `<div class="bar-row">
-      <div class="bar-label">${escapeHtml(label)}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-      <div class="bar-value">${count}</div>
-    </div>`;
-  }).join("");
+  ring.textContent = result.score;
+  ring.style.setProperty("--score-color", result.color);
+  labelEl.innerHTML = `Customer Health Score: <span style="color:${result.color};">${result.label}</span>`;
 }
 
-// Draws the header waveform. avgSentiment ranges -1..1. Positive scores
-// draw a calm, shallow, teal-colored wave; negative scores draw a
-// sharper, higher-amplitude, red-tinted wave -- a real readout of the
-// data, not a fixed decoration.
+// --- Theme status --------------------------------------------------------
+let themeStatuses = {};
+
+async function loadThemeStatuses() {
+  try {
+    const r = await fetch(`${API_BASE}/api/themes/status`);
+    if (r.ok) themeStatuses = await r.json();
+  } catch (err) {
+    themeStatuses = {};
+  }
+}
+
+async function setThemeStatus(theme, status) {
+  try {
+    const r = await fetch(`${API_BASE}/api/themes/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme, status }),
+    });
+    if (r.ok) themeStatuses = await r.json();
+  } catch (err) { /* silently keep old state if this fails -- not worth blocking the UI over */ }
+}
+
+function statusClass(status) {
+  if (status === "In Progress") return "status-in-progress";
+  if (status === "Resolved") return "status-resolved";
+  return "status-open";
+}
+
+// --- Pulse waveform --------------------------------------------------------
 function drawPulseWave(avgSentiment) {
   const path = document.getElementById("pulse-path");
   const width = 1200, midY = 32;
   const amplitude = 6 + Math.abs(avgSentiment) * 22;
-  const spikiness = avgSentiment < 0 ? 3 : 1.2; // sharper peaks when negative
+  const spikiness = avgSentiment < 0 ? 3 : 1.2;
   const segments = 24;
   let d = `M0,${midY}`;
   for (let i = 1; i <= segments; i++) {
@@ -292,125 +510,375 @@ function drawPulseWave(avgSentiment) {
 
 function buildHeadline(records) {
   const total = records.length;
-  if (total === 0) return { headline: "No feedback processed yet.", subtitle: "Run the pipeline on a batch of feedback to populate this dashboard." };
-
+  if (total === 0) return { headline: "No feedback matches the current filters.", subtitle: "Try widening the date range or resetting filters." };
   const urgent = records.filter(r => r.urgency === "High").length;
   const negative = records.filter(r => r.sentiment === "Negative").length;
   const flagged = records.filter(r => r.flagged_for_review).length;
   const pctNegative = Math.round((negative / total) * 100);
-
   const themeCounts = {};
   records.forEach(r => (r.themes || []).forEach(t => { themeCounts[t] = (themeCounts[t] || 0) + 1; }));
   const topTheme = Object.entries(themeCounts).sort((a, b) => b[1] - a[1])[0];
-
-  let headline = `${total} pieces of feedback this week — ${pctNegative}% negative.`;
-  if (urgent > 0) {
-    headline += ` ${urgent} item${urgent === 1 ? "" : "s"} need${urgent === 1 ? "s" : ""} immediate attention.`;
-  }
-  let subtitle = topTheme
-    ? `Most common issue: "${topTheme[0]}" (${topTheme[1]} mention${topTheme[1] === 1 ? "" : "s"}).`
-    : "No recurring themes identified yet.";
-  if (flagged > 0) {
-    subtitle += ` ${flagged} item${flagged === 1 ? "" : "s"} flagged for human review.`;
-  }
+  let headline = `${total} pieces of feedback in this range — ${pctNegative}% negative.`;
+  if (urgent > 0) headline += ` ${urgent} item${urgent === 1 ? "" : "s"} need${urgent === 1 ? "s" : ""} immediate attention.`;
+  let subtitle = topTheme ? `Most common issue: "${topTheme[0]}" (${topTheme[1]} mention${topTheme[1] === 1 ? "" : "s"}).` : "No recurring themes identified yet.";
+  if (flagged > 0) subtitle += ` ${flagged} item${flagged === 1 ? "" : "s"} flagged for human review.`;
   return { headline, subtitle };
 }
 
-async function loadDashboard() {
+function renderTrend(current, previous) {
+  const el = document.getElementById("week-trend");
+  if (previous.length === 0) {
+    el.innerHTML = '<span style="color:var(--muted);">No data from the equivalent previous period to compare against.</span>';
+    return;
+  }
+  const curAvg = current.reduce((s, r) => s + r.sentiment_score, 0) / (current.length || 1);
+  const prevAvg = previous.reduce((s, r) => s + r.sentiment_score, 0) / previous.length;
+  const delta = curAvg - prevAvg;
+  const volumeDelta = current.length - previous.length;
+  const direction = delta > 0.05 ? "improved" : delta < -0.05 ? "worsened" : "held steady";
+  const color = delta > 0.05 ? "var(--pulse)" : delta < -0.05 ? "var(--negative)" : "var(--muted)";
+  const volText = volumeDelta > 0 ? `+${volumeDelta} more items` : volumeDelta < 0 ? `${Math.abs(volumeDelta)} fewer items` : "the same volume";
+  el.innerHTML = `<span style="color:${color};">Sentiment ${direction} (${delta >= 0 ? "+" : ""}${delta.toFixed(2)})</span> vs. the equivalent previous period, with ${volText} (${previous.length} → ${current.length}).`;
+}
+
+function renderBarList(containerId, counts) {
+  const container = document.getElementById(containerId);
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">No data in the current filter range.</p>';
+    return;
+  }
+  const max = Math.max(...entries.map(([, v]) => v));
+  container.innerHTML = entries.map(([label, count]) => {
+    const pct = max > 0 ? (count / max) * 100 : 0;
+    return `<div class="bar-row">
+      <div class="bar-label">${escapeHtml(label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="bar-value">${count}</div>
+    </div>`;
+  }).join("");
+}
+
+let allThemeCounts = {};
+let themesExpanded = false;
+const THEME_DISPLAY_LIMIT = 10;
+
+function renderThemeList() {
+  const container = document.getElementById("themes");
+  const entries = Object.entries(allThemeCounts).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">No themes in the current filter range.</p>';
+    return;
+  }
+  const visible = themesExpanded ? entries : entries.slice(0, THEME_DISPLAY_LIMIT);
+  const max = Math.max(...entries.map(([, v]) => v));
+  const statusOptions = ["Open", "In Progress", "Resolved"];
+  const rowsHtml = visible.map(([label, count]) => {
+    const pct = max > 0 ? (count / max) * 100 : 0;
+    const currentStatus = themeStatuses[label] || "Open";
+    const optionsHtml = statusOptions.map(s => `<option value="${s}" ${s === currentStatus ? "selected" : ""}>${s}</option>`).join("");
+    return `<div class="theme-row">
+      <div class="bar-label">${escapeHtml(label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="bar-value">${count}</div>
+      <select class="theme-status-select ${statusClass(currentStatus)} no-print" data-theme="${escapeHtml(label)}">${optionsHtml}</select>
+    </div>`;
+  }).join("");
+
+  const toggleHtml = entries.length > THEME_DISPLAY_LIMIT
+    ? `<button class="refresh-btn no-print" style="margin-top:6px;" onclick="toggleThemesExpanded()">${themesExpanded ? "Show fewer" : `Show all ${entries.length} themes`}</button>`
+    : "";
+
+  container.innerHTML = `<div style="max-height:${themesExpanded ? "420px" : "none"}; overflow-y:${themesExpanded ? "auto" : "visible"};">${rowsHtml}</div>${toggleHtml}`;
+
+  // Re-wire onchange handlers properly (the inline encodeURIComponent hack
+  // above is fragile with special characters -- use direct references instead).
+  container.querySelectorAll(".theme-status-select").forEach(sel => {
+    sel.onchange = () => setThemeStatus(sel.dataset.theme, sel.value).then(() => renderThemeList());
+  });
+}
+
+function toggleThemesExpanded() {
+  themesExpanded = !themesExpanded;
+  renderThemeList();
+}
+
+function urgencyBadgeClass(urgency) {
+  if (urgency === "High") return "urg-high";
+  if (urgency === "Medium") return "urg-medium";
+  return "urg-low";
+}
+function sentimentBadgeClass(sentiment) {
+  if (sentiment === "Positive") return "sent-positive";
+  if (sentiment === "Negative") return "sent-negative";
+  return "sent-neutral";
+}
+
+// --- Business impact ---------------------------------------------------
+function renderBusinessImpact(records) {
+  const body = document.getElementById("business-impact-body");
+  const manualMinutes = getManualMinutes();
+  const timedRecords = records.filter(r => r.processing_time_ms !== null && r.processing_time_ms !== undefined);
+  const skippedCount = records.length - timedRecords.length;
+  const genuineSkips = records.filter(r =>
+    (r.processing_time_ms === null || r.processing_time_ms === undefined) &&
+    r.flagged_for_review && (r.review_reason || "").toLowerCase().includes("non-english")
+  ).length;
+  const legacyCount = skippedCount - genuineSkips;
+
+  if (timedRecords.length === 0) {
+    const parts = [];
+    if (genuineSkips > 0) parts.push(`${genuineSkips} skipped AI processing (non-English input)`);
+    if (legacyCount > 0) parts.push(`${legacyCount} processed before this metric existed`);
+    body.innerHTML = `<p style="color:var(--muted); font-size:0.85rem;">No timed items in range${parts.length ? ` -- ${parts.join(", ")}.` : "."}</p>`;
+    return;
+  }
+
+  const manualTotalMs = timedRecords.length * manualMinutes * 60000;
+  const aiTotalMs = timedRecords.reduce((sum, r) => sum + r.processing_time_ms, 0);
+  const savedHours = Math.max((manualTotalMs - aiTotalMs) / 3600000, 0);
+  const speedup = aiTotalMs > 0 ? (manualTotalMs / aiTotalMs).toFixed(0) : "-";
+  const maxMs = Math.max(manualTotalMs, aiTotalMs, 1);
+  const manualPct = (manualTotalMs / maxMs) * 100;
+  const aiPct = Math.max((aiTotalMs / maxMs) * 100, 1);
+
+  body.innerHTML = `
+    <div class="impact-bar-row">
+      <div class="impact-bar-label">Manual (assumption)</div>
+      <div class="impact-bar-track"><div class="impact-bar-fill manual" style="width:${manualPct}%"></div></div>
+      <div class="impact-bar-value">${(manualTotalMs / 60000).toFixed(1)} min</div>
+    </div>
+    <div class="impact-bar-row">
+      <div class="impact-bar-label">AI (measured)</div>
+      <div class="impact-bar-track"><div class="impact-bar-fill ai" style="width:${aiPct}%"></div></div>
+      <div class="impact-bar-value">${(aiTotalMs / 1000).toFixed(2)} sec</div>
+    </div>
+    <div class="impact-callout">
+      ${speedup}x faster than manual review, based on ${timedRecords.length} item${timedRecords.length === 1 ? "" : "s"} with real measured AI time
+      ${skippedCount > 0 ? ` (${skippedCount} excluded, no timing data)` : ""}.
+      Estimated ${savedHours.toFixed(2)} hour(s) saved at the ${manualMinutes} min/item assumption above.
+    </div>
+  `;
+}
+
+// --- CSV upload (real parser, handles quoted commas) -----------------------
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (inQuotes) {
+      if (char === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else inQuotes = false; }
+      else field += char;
+    } else {
+      if (char === '"') inQuotes = true;
+      else if (char === ",") { row.push(field); field = ""; }
+      else if (char === "\n" || char === "\r") {
+        if (char === "\r" && text[i + 1] === "\n") i++;
+        row.push(field); field = "";
+        if (row.length > 1 || row[0] !== "") rows.push(row);
+        row = [];
+      } else field += char;
+    }
+  }
+  if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function parseFeedbackCSV(text) {
+  const rows = parseCSV(text);
+  if (rows.length === 0) throw new Error("CSV file is empty.");
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const textIdx = headers.indexOf("text");
+  if (textIdx === -1) throw new Error(`CSV must have a "text" column. Found columns: ${headers.join(", ")}`);
+  const sourceIdx = headers.indexOf("source");
+  return rows.slice(1)
+    .filter(r => r.length > 1 || (r[0] || "").trim() !== "")
+    .map(r => ({ text: r[textIdx] || "", source: sourceIdx !== -1 ? (r[sourceIdx] || "csv_upload") : "csv_upload" }));
+}
+
+document.getElementById("csv-file-input").addEventListener("change", (event) => {
+  document.getElementById("upload-btn").disabled = !event.target.files.length;
+});
+
+async function uploadCsv() {
+  const fileInput = document.getElementById("csv-file-input");
+  const statusEl = document.getElementById("upload-status");
+  const uploadBtn = document.getElementById("upload-btn");
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  statusEl.textContent = "Reading file...";
+  uploadBtn.disabled = true;
+  try {
+    const text = await file.text();
+    const items = parseFeedbackCSV(text);
+    if (items.length === 0) { statusEl.textContent = "No rows found in that CSV."; uploadBtn.disabled = false; return; }
+    if (items.length > 200) {
+      statusEl.innerHTML = `<span style="color:var(--negative);">That CSV has ${items.length} rows -- the API caps a batch at 200.</span>`;
+      uploadBtn.disabled = false; return;
+    }
+    statusEl.textContent = `Processing ${items.length} item(s) through the AI pipeline...`;
+    const response = await fetch(`${API_BASE}/api/feedback`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(items),
+    });
+    if (!response.ok) {
+      const errBody = await response.json().catch(() => ({}));
+      throw new Error(errBody.error || `API returned ${response.status}`);
+    }
+    const results = await response.json();
+    statusEl.innerHTML = `<span style="color:var(--pulse);">Processed ${results.length} item(s) successfully.</span>`;
+    fileInput.value = "";
+    loadDashboard();
+  } catch (err) {
+    statusEl.innerHTML = `<span style="color:var(--negative);">Upload failed: ${escapeHtml(err.message)}</span>`;
+  } finally {
+    uploadBtn.disabled = fileInput.files.length === 0;
+  }
+}
+
+async function clearAllData() {
+  if (!confirm("This permanently deletes ALL stored feedback records. This can't be undone. Continue?")) return;
+  const statusEl = document.getElementById("upload-status");
+  statusEl.textContent = "Clearing all data...";
+  try {
+    const response = await fetch(`${API_BASE}/api/data`, { method: "DELETE" });
+    if (!response.ok) throw new Error(`API returned ${response.status}`);
+    statusEl.innerHTML = '<span style="color:var(--pulse);">All data cleared.</span>';
+    loadDashboard();
+  } catch (err) {
+    statusEl.innerHTML = `<span style="color:var(--negative);">Failed to clear data: ${escapeHtml(err.message)}</span>`;
+  }
+}
+
+// --- CSV export of the currently filtered table -----------------------
+function exportFilteredCsv() {
+  const records = window.filteredRecords || [];
+  if (records.length === 0) { alert("No records to export in the current filter range."); return; }
+  const headers = ["text", "category", "sentiment", "urgency", "themes", "source", "submitted_at"];
+  const lines = [headers.join(",")];
+  records.forEach(r => {
+    const row = [r.text, r.category, r.sentiment, r.urgency, (r.themes || []).join("; "), r.source, r.submitted_at];
+    lines.push(row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "pulseai_filtered_feedback.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// --- Main render, driven by current filter state --------------------------
+function renderAll() {
+  const allRecords = window.allRecords || [];
+  const f = getFilterValues();
+  const filtered = applyFilters(allRecords, f);
+  window.filteredRecords = filtered;
+  const previous = getPreviousPeriodRecords(allRecords, f);
+
   const heroHeadline = document.getElementById("hero-headline");
   const heroSubtitle = document.getElementById("hero-subtitle");
-  const summaryEl = document.getElementById("summary");
 
+  const { headline, subtitle } = buildHeadline(filtered);
+  heroHeadline.textContent = headline;
+  heroSubtitle.textContent = subtitle;
+  renderTrend(filtered, previous);
+  renderHealthScore(filtered);
+
+  if (filtered.length === 0) {
+    document.getElementById("vitals-row").innerHTML = "";
+    drawPulseWave(0);
+    ["categories", "sentiment"].forEach(id => renderBarList(id, {}));
+    allThemeCounts = {};
+    renderThemeList();
+    renderBusinessImpact([]);
+    document.getElementById("flagged").innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">Nothing in range.</p>';
+    document.getElementById("feedback-table-body").innerHTML = "";
+    document.getElementById("table-subtitle").textContent = "0 items match the current filters";
+    return;
+  }
+
+  const avgSentiment = filtered.reduce((sum, r) => sum + r.sentiment_score, 0) / filtered.length;
+  drawPulseWave(avgSentiment);
+
+  const urgentCount = filtered.filter(r => r.urgency === "High").length;
+  const flaggedCount = filtered.filter(r => r.flagged_for_review).length;
+
+  document.getElementById("vitals-row").innerHTML = `
+    <div class="vital-tile" style="--tile-accent:#34E5C3;"><div class="vital-value">${filtered.length}</div><div class="vital-label">Feedback (Filtered)</div></div>
+    <div class="vital-tile" style="--tile-accent:${avgSentiment < 0 ? '#FF6B6B' : '#34E5C3'};"><div class="vital-value">${avgSentiment.toFixed(2)}</div><div class="vital-label">Avg Sentiment (-1 to 1)</div></div>
+    <div class="vital-tile" style="--tile-accent:#FF6B6B;"><div class="vital-value">${urgentCount}</div><div class="vital-label">High Urgency</div></div>
+    <div class="vital-tile" style="--tile-accent:#F5A623;"><div class="vital-value">${flaggedCount}</div><div class="vital-label">Flagged for Review</div></div>
+  `;
+
+  const categoryCounts = {}, sentimentCounts = {}, themeCounts = {};
+  filtered.forEach(r => {
+    categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+    sentimentCounts[r.sentiment] = (sentimentCounts[r.sentiment] || 0) + 1;
+    (r.themes || []).forEach(t => { themeCounts[t] = (themeCounts[t] || 0) + 1; });
+  });
+  renderBarList("categories", categoryCounts);
+  renderBarList("sentiment", sentimentCounts);
+  allThemeCounts = themeCounts;
+  renderThemeList();
+  renderBusinessImpact(filtered);
+
+  const flaggedRecords = filtered.filter(r => r.flagged_for_review);
+  document.getElementById("flagged").innerHTML = flaggedRecords.length === 0
+    ? '<p style="color:var(--muted); font-size:0.85rem;">Nothing flagged in range.</p>'
+    : flaggedRecords.map(r => `
+        <div class="flagged-item">
+          <div class="flagged-text">"${escapeHtml(r.text.slice(0, 140))}"</div>
+          <div class="flagged-reason">${escapeHtml(r.review_reason || "Flagged for review")}</div>
+        </div>
+      `).join("");
+
+  document.getElementById("table-subtitle").textContent = `${filtered.length} item(s) match the current filters, most recent first`;
+  document.getElementById("feedback-table-body").innerHTML = filtered.slice().reverse().map(r => `
+    <tr>
+      <td class="text-cell" title="${escapeHtml(r.text)}">${escapeHtml(r.text)}</td>
+      <td><span class="badge cat">${escapeHtml(r.category)}</span></td>
+      <td><span class="badge ${sentimentBadgeClass(r.sentiment)}">${escapeHtml(r.sentiment)}</span></td>
+      <td><span class="badge ${urgencyBadgeClass(r.urgency)}">${escapeHtml(r.urgency)}</span></td>
+      <td>${(r.themes || []).map(t => `<span class="badge cat">${escapeHtml(t)}</span>`).join("") || "—"}</td>
+    </tr>
+  `).join("");
+}
+
+async function loadDashboard() {
+  const summaryEl = document.getElementById("summary");
   try {
     const [feedbackRes, summaryRes] = await Promise.all([
       fetch(`${API_BASE}/api/feedback`),
       fetch(`${API_BASE}/api/summary/weekly`),
     ]);
+    if (!feedbackRes.ok || !summaryRes.ok) throw new Error(`API returned an error (feedback: ${feedbackRes.status}, summary: ${summaryRes.status})`);
 
-    if (!feedbackRes.ok || !summaryRes.ok) {
-      throw new Error(`API returned an error (feedback: ${feedbackRes.status}, summary: ${summaryRes.status})`);
-    }
-
-    const records = await feedbackRes.json();
+    window.allRecords = await feedbackRes.json();
     const summaryData = await summaryRes.json();
-
-    document.getElementById("last-updated-text").textContent = `Updated ${new Date().toLocaleTimeString()}`;
-
-    if (records.length === 0) {
-      heroHeadline.textContent = "No feedback processed yet.";
-      heroSubtitle.innerHTML = `Run the pipeline on a batch of feedback, then click <strong>Refresh</strong> above.`;
-      document.getElementById("vitals-row").innerHTML = "";
-      summaryEl.textContent = summaryData.summary || "Nothing to summarize yet.";
-      ["categories", "sentiment", "themes"].forEach(id => renderBarList(id, {}));
-      document.getElementById("flagged").innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">Nothing flagged yet.</p>';
-      document.getElementById("feedback-table-body").innerHTML = "";
-      document.getElementById("table-subtitle").textContent = "";
-      drawPulseWave(0);
-      return;
-    }
-
-    const { headline, subtitle } = buildHeadline(records);
-    heroHeadline.textContent = headline;
-    heroSubtitle.textContent = subtitle;
-
-    const avgSentiment = records.reduce((sum, r) => sum + r.sentiment_score, 0) / records.length;
-    drawPulseWave(avgSentiment);
-
-    const urgentCount = records.filter(r => r.urgency === "High").length;
-    const flaggedCount = records.filter(r => r.flagged_for_review).length;
-
-    document.getElementById("vitals-row").innerHTML = `
-      <div class="vital-tile" style="--tile-accent:#34E5C3;"><div class="vital-value">${records.length}</div><div class="vital-label">Total Feedback</div></div>
-      <div class="vital-tile" style="--tile-accent:${avgSentiment < 0 ? '#FF6B6B' : '#34E5C3'};"><div class="vital-value">${avgSentiment.toFixed(2)}</div><div class="vital-label">Avg Sentiment (-1 to 1)</div></div>
-      <div class="vital-tile" style="--tile-accent:#FF6B6B;"><div class="vital-value">${urgentCount}</div><div class="vital-label">High Urgency</div></div>
-      <div class="vital-tile" style="--tile-accent:#F5A623;"><div class="vital-value">${flaggedCount}</div><div class="vital-label">Flagged for Review</div></div>
-    `;
-
     summaryEl.innerHTML = escapeHtml(summaryData.summary || "No summary available.");
 
-    const categoryCounts = {};
-    const sentimentCounts = {};
-    const themeCounts = {};
-    records.forEach(r => {
-      categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
-      sentimentCounts[r.sentiment] = (sentimentCounts[r.sentiment] || 0) + 1;
-      (r.themes || []).forEach(t => { themeCounts[t] = (themeCounts[t] || 0) + 1; });
-    });
-    renderBarList("categories", categoryCounts);
-    renderBarList("sentiment", sentimentCounts);
-    renderBarList("themes", themeCounts);
+    await loadThemeStatuses();
 
-    const flaggedRecords = records.filter(r => r.flagged_for_review);
-    const flaggedDiv = document.getElementById("flagged");
-    flaggedDiv.innerHTML = flaggedRecords.length === 0
-      ? '<p style="color:var(--muted); font-size:0.85rem;">Nothing flagged right now.</p>'
-      : flaggedRecords.map(r => `
-          <div class="flagged-item">
-            <div class="flagged-text">"${escapeHtml(r.text.slice(0, 140))}"</div>
-            <div class="flagged-reason">${escapeHtml(r.review_reason || "Flagged for review")}</div>
-          </div>
-        `).join("");
+    if (!window.filtersInitialized) {
+      initFilterInputs(window.allRecords);
+      window.filtersInitialized = true;
+    }
 
-    document.getElementById("table-subtitle").textContent = `${records.length} item${records.length === 1 ? "" : "s"}, most recent first`;
-    document.getElementById("feedback-table-body").innerHTML = records.slice().reverse().map(r => `
-      <tr>
-        <td class="text-cell" title="${escapeHtml(r.text)}">${escapeHtml(r.text)}</td>
-        <td><span class="badge cat">${escapeHtml(r.category)}</span></td>
-        <td><span class="badge ${sentimentBadgeClass(r.sentiment)}">${escapeHtml(r.sentiment)}</span></td>
-        <td><span class="badge ${urgencyBadgeClass(r.urgency)}">${escapeHtml(r.urgency)}</span></td>
-        <td>${(r.themes || []).map(t => `<span class="badge cat">${escapeHtml(t)}</span>`).join("") || "—"}</td>
-      </tr>
-    `).join("");
-
+    document.getElementById("last-updated-text").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    renderAll();
   } catch (err) {
-    heroHeadline.textContent = "Couldn't load the pulse.";
-    heroSubtitle.innerHTML = "";
+    document.getElementById("hero-headline").textContent = "Couldn't load the pulse.";
+    document.getElementById("hero-subtitle").innerHTML = "";
     summaryEl.innerHTML = `<div class="error-banner">Couldn't reach the API: <code>${escapeHtml(err.message)}</code>. Make sure <code>python -m api.app</code> is running, and that it's reachable at <code>${API_BASE}</code>.</div>`;
     document.getElementById("vitals-row").innerHTML = "";
     drawPulseWave(0);
   }
 }
 
+initManualMinutesInput();
 loadDashboard();
 </script>
 </body>

@@ -68,3 +68,43 @@ def test_orchestration_safety_net_catches_unexpected_exceptions(monkeypatch):
     assert len(results) == 1
     assert results[0].flagged_for_review is True
     assert "Unexpected pipeline error" in results[0].review_reason
+
+
+def test_processing_time_reflects_real_elapsed_time(monkeypatch):
+    """
+    processing_time_ms must be REAL measured wall-clock time, not a
+    fabricated placeholder -- this is what the dashboard's business-impact
+    metric relies on being honest. Proven here by injecting a known,
+    deliberate delay into the fake client and confirming the measured
+    time is at least that long.
+    """
+    import time as time_module
+
+    class SlowScriptedAIClient(ScriptedAIClient):
+        def complete(self, system, user, temperature=0.0):
+            time_module.sleep(0.05)
+            return super().complete(system, user, temperature)
+
+    fake = SlowScriptedAIClient(
+        classification_response='{"category": "Bug / Technical Issue", "confidence": 0.9}',
+        sentiment_response='{"sentiment": "Negative", "sentiment_score": -0.7, "urgency": "High"}',
+    )
+    item = FeedbackItem(id="fb5", text="The app crashes every time I try to upload a photo here")
+    result = process_one(item, fake, logger=lambda msg: None)
+
+    # 3 calls (classify, sentiment, themes) x ~50ms sleep each = ~150ms minimum
+    assert result.processing_time_ms >= 140
+
+
+def test_processing_time_is_none_when_brain_layer_is_skipped():
+    """Non-English input skips classify/sentiment/themes entirely -- the
+    timing field should honestly reflect that no AI processing happened
+    (None), not a misleading 0 that implies instant processing."""
+
+    class ExplodingClient:
+        def complete(self, *a, **k):
+            raise AssertionError("brain layer should not be called")
+
+    item = FeedbackItem(id="fb6", text="La aplicacion se bloquea cada vez que subo una foto")
+    result = process_one(item, ExplodingClient(), logger=lambda msg: None)
+    assert result.processing_time_ms is None

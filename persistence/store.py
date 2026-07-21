@@ -113,6 +113,7 @@ def _processed_feedback_to_dict(p: ProcessedFeedback) -> dict:
         "themes": [_theme_tag_to_dict(t) for t in p.themes],
         "flagged_for_review": p.flagged_for_review,
         "review_reason": p.review_reason,
+        "processing_time_ms": p.processing_time_ms,
     }
 
 
@@ -123,6 +124,10 @@ def _processed_feedback_from_dict(d: dict) -> ProcessedFeedback:
         sentiment=_sentiment_from_dict(d["sentiment"]),
         themes=[_theme_tag_from_dict(t) for t in d.get("themes", [])],
         flagged_for_review=d.get("flagged_for_review", False),
+        # .get() with a None default -- records saved before this field
+        # existed simply won't have this key, and that's a normal, expected
+        # state (not an error), same as flagged_for_review's default above.
+        processing_time_ms=d.get("processing_time_ms"),
         review_reason=d.get("review_reason"),
     )
 
@@ -193,5 +198,60 @@ def clear(path: Path | None = None) -> None:
     a destructive action that should never happen as a side effect of normal use.
     """
     path = path if path is not None else DEFAULT_STORE_PATH
+    if os.path.exists(path):
+        os.remove(path)
+
+
+# ---------------------------------------------------------------------------
+# Theme status tracking
+# ---------------------------------------------------------------------------
+# A separate, small JSON file (not JSONL) -- this is genuinely different
+# data: a mutable key-value map (theme label -> status), not an append-only
+# log of immutable records. Read-modify-write is fine here because this
+# file is small (one entry per distinct theme, not one per feedback item)
+# and updates are infrequent (a person manually changing a status), unlike
+# the high-frequency, append-heavy writes the JSONL format above optimizes for.
+
+DEFAULT_THEME_STATUS_PATH = Path("data/theme_status.json")
+VALID_THEME_STATUSES = {"Open", "In Progress", "Resolved"}
+
+
+def load_theme_statuses(path: Path | None = None) -> dict[str, str]:
+    """Return {theme_label: status}. Empty dict if the file doesn't exist yet."""
+    path = path if path is not None else DEFAULT_THEME_STATUS_PATH
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            print(f"[store] theme_status file at {path} is not a dict, ignoring its contents")
+            return {}
+        return data
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"[store] Could not read theme status file at {path}: {e}")
+        return {}
+
+
+def set_theme_status(theme: str, status: str, path: Path | None = None) -> dict[str, str]:
+    """
+    Set the status for one theme label. Returns the full updated map.
+    Raises ValueError for an unrecognized status -- callers (the API layer)
+    are expected to turn that into a clean 400, not a 500.
+    """
+    if status not in VALID_THEME_STATUSES:
+        raise ValueError(f"status must be one of {sorted(VALID_THEME_STATUSES)}, got {status!r}")
+    path = path if path is not None else DEFAULT_THEME_STATUS_PATH
+    statuses = load_theme_statuses(path)
+    statuses[theme] = status
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(statuses, f, indent=2)
+    return statuses
+
+
+def clear_theme_statuses(path: Path | None = None) -> None:
+    """Used by tests for a clean slate, same reasoning as clear() above."""
+    path = path if path is not None else DEFAULT_THEME_STATUS_PATH
     if os.path.exists(path):
         os.remove(path)

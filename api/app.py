@@ -14,6 +14,7 @@ import os
 import time
 import uuid
 from collections import defaultdict, deque
+from datetime import datetime, timedelta, timezone
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -110,6 +111,7 @@ def _processed_to_json(p) -> dict:
         "id": p.feedback.id,
         "text": p.feedback.text,
         "source": p.feedback.source,
+        "submitted_at": p.feedback.submitted_at.isoformat(),
         "category": p.classification.category.value,
         "confidence": p.classification.confidence,
         "sentiment": p.sentiment.sentiment.value,
@@ -118,6 +120,7 @@ def _processed_to_json(p) -> dict:
         "themes": [t.theme for t in p.themes],
         "flagged_for_review": p.flagged_for_review,
         "review_reason": p.review_reason,
+        "processing_time_ms": p.processing_time_ms,
     }
 
 
@@ -167,7 +170,19 @@ def list_feedback():
 
 @app.route("/api/summary/weekly", methods=["GET"])
 def weekly_summary():
-    records = persistence_store.load_all()
+    # Accepts ?days=N (default 7) to scope the summary to real recent
+    # data by actual submitted_at timestamp, rather than summarizing
+    # every record ever stored regardless of age. This is what makes
+    # "weekly summary" an honest label instead of "all-time summary."
+    try:
+        days = int(request.args.get("days", 7))
+    except ValueError:
+        return jsonify({"error": "days must be an integer"}), 400
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    all_records = persistence_store.load_all()
+    records = [r for r in all_records if r.feedback.submitted_at >= cutoff]
+
     try:
         client = _get_client()
     except RuntimeError as e:
@@ -179,6 +194,44 @@ def weekly_summary():
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
+
+
+@app.route("/api/data", methods=["DELETE"])
+def clear_all_data():
+    """
+    Wipe all stored feedback. This is a destructive, deliberate action --
+    intended for demo/dev resets (e.g. clearing legacy test records saved
+    before a new field was added), not something the pipeline or any
+    automated process ever calls on its own. The dashboard only exposes
+    this behind an explicit confirmation dialog.
+    """
+    persistence_store.clear()
+    return jsonify({"status": "cleared"}), 200
+
+
+@app.route("/api/themes/status", methods=["GET"])
+def get_theme_statuses():
+    return jsonify(persistence_store.load_theme_statuses()), 200
+
+
+@app.route("/api/themes/status", methods=["POST"])
+def set_theme_status():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or "theme" not in payload or "status" not in payload:
+        return jsonify({"error": "Expected {\"theme\": str, \"status\": str}"}), 400
+
+    theme = str(payload["theme"]).strip()
+    status = str(payload["status"]).strip()
+    if not theme:
+        return jsonify({"error": "theme cannot be blank"}), 400
+
+    try:
+        updated = persistence_store.set_theme_status(theme, status)
+    except ValueError as e:
+        # Unrecognized status (not Open/In Progress/Resolved) -- clean 400.
+        return jsonify({"error": str(e)}), 400
+
+    return jsonify(updated), 200
 
 
 if __name__ == "__main__":
