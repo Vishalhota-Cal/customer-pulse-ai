@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PulseAI — Weekly Feedback Pulse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0F17;
+    --surface: #131826;
+    --surface-2: #1A2032;
+    --border: rgba(255,255,255,0.07);
+    --pulse: #34E5C3;
+    --pulse-dim: rgba(52,229,195,0.12);
+    --negative: #FF6B6B;
+    --negative-dim: rgba(255,107,107,0.12);
+    --amber: #F5A623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --text: #E7EBF3;
+    --muted: #8B93A7;
+    --faint: #545D72;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .header-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(19,24,38,0.9), rgba(11,15,23,0.9));
+    position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);
+  }
+  .header-brand { display: flex; align-items: center; gap: 14px; }
+  .header-brand h1 {
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.15rem; margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--pulse);
+    box-shadow: 0 0 0 0 rgba(52,229,195,0.5); animation: livepulse 2s infinite;
+  }
+  @keyframes livepulse {
+    0% { box-shadow: 0 0 0 0 rgba(52,229,195,0.5); }
+    70% { box-shadow: 0 0 0 8px rgba(52,229,195,0); }
+    100% { box-shadow: 0 0 0 0 rgba(52,229,195,0); }
+  }
+  .header-meta { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.8rem; font-family: 'IBM Plex Mono', monospace; }
+  .refresh-btn {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    padding: 8px 18px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s ease;
+  }
+  .refresh-btn:hover { background: #222941; border-color: rgba(255,255,255,0.15); }
+
+  .pulse-strip { height: 64px; overflow: hidden; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .pulse-strip svg { width: 100%; height: 100%; display: block; }
+
+  main { max-width: 1120px; margin: 0 auto; padding: 40px 32px 80px; }
+
+  .hero-headline {
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.9rem; line-height: 1.25;
+    margin: 0 0 10px 0; letter-spacing: -0.015em;
+  }
+  .hero-subtitle { color: var(--muted); font-size: 0.98rem; max-width: 680px; margin: 0 0 36px 0; line-height: 1.55; }
+
+  .vitals-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 36px; }
+  .vital-tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .vital-tile::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--tile-accent, var(--pulse));
+  }
+  .vital-value {
+    font-family: 'IBM Plex Mono', monospace; font-size: 1.9rem; font-weight: 600; color: var(--text);
+    line-height: 1;
+  }
+  .vital-label { color: var(--muted); font-size: 0.76rem; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px 26px; margin-bottom: 22px;
+  }
+  .card-title {
+    font-family: 'Sora', sans-serif; font-weight: 700; font-size: 0.95rem; margin: 0 0 4px 0;
+  }
+  .card-subtitle { color: var(--muted); font-size: 0.82rem; margin: 0 0 18px 0; }
+  .summary-text { line-height: 1.7; font-size: 0.98rem; color: #D5DAE5; white-space: pre-wrap; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .bar-label { width: 200px; flex-shrink: 0; font-size: 0.84rem; color: #C7CDDA; }
+  .bar-track { flex: 1; background: var(--surface-2); border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; background: var(--pulse); transition: width 0.4s ease; }
+  .bar-value { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: var(--muted); width: 32px; text-align: right; flex-shrink: 0; }
+
+  .badge {
+    display: inline-flex; align-items: center; font-size: 0.72rem; font-weight: 600;
+    padding: 4px 10px; border-radius: 999px; margin-right: 6px; margin-bottom: 6px;
+    font-family: 'Inter', sans-serif;
+  }
+  .badge.cat { background: rgba(139,148,255,0.12); color: #9FA8FF; }
+  .badge.urg-high { background: var(--negative-dim); color: var(--negative); }
+  .badge.urg-medium { background: var(--amber-dim); color: var(--amber); }
+  .badge.urg-low { background: var(--pulse-dim); color: var(--pulse); }
+  .badge.sent-positive { background: var(--pulse-dim); color: var(--pulse); }
+  .badge.sent-negative { background: var(--negative-dim); color: var(--negative); }
+  .badge.sent-neutral { background: rgba(139,147,167,0.12); color: var(--muted); }
+
+  .flagged-item {
+    padding: 14px 16px; border-radius: 12px; background: var(--surface-2);
+    border-left: 3px solid var(--negative); margin-bottom: 10px;
+  }
+  .flagged-item .flagged-text { font-size: 0.88rem; color: var(--text); margin-bottom: 6px; }
+  .flagged-item .flagged-reason { font-size: 0.78rem; color: var(--muted); font-style: italic; }
+
+  .empty-state {
+    text-align: center; padding: 50px 20px; color: var(--muted);
+  }
+  .empty-state .empty-title { font-family: 'Sora', sans-serif; color: var(--text); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+  .empty-state code {
+    font-family: 'IBM Plex Mono', monospace; background: var(--surface-2); padding: 2px 8px;
+    border-radius: 6px; color: var(--pulse); font-size: 0.85rem;
+  }
+  .error-banner {
+    background: var(--negative-dim); border: 1px solid rgba(255,107,107,0.3); color: var(--negative);
+    padding: 14px 18px; border-radius: 12px; font-size: 0.88rem; line-height: 1.5;
+  }
+  .error-banner code { font-family: 'IBM Plex Mono', monospace; background: rgba(0,0,0,0.2); padding: 1px 6px; border-radius: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td.text-cell { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #C7CDDA; }
+  .table-scroll { max-height: 420px; overflow-y: auto; }
+
+  @media (max-width: 800px) {
+    .vitals-row { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    .bar-label { width: 130px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <div class="header-brand">
+      <span class="live-dot"></span>
+      <h1>PulseAI</h1>
+    </div>
+    <div class="header-meta">
+      <span id="last-updated-text">Not loaded yet</span>
+      <button class="refresh-btn" onclick="loadDashboard()">Refresh</button>
+    </div>
+  </div>
+
+  <!-- Signature element: a live heartbeat-style waveform. Its jaggedness
+       and color are driven by the REAL average sentiment score once data
+       loads (calmer teal line when sentiment is positive, sharper red
+       spikes when negative) -- not decorative, an actual data readout. -->
+  <div class="pulse-strip">
+    <svg id="pulse-svg" viewBox="0 0 1200 64" preserveAspectRatio="none">
+      <path id="pulse-path" d="M0,32 L1200,32" stroke="#34E5C3" stroke-width="2" fill="none" opacity="0.6"/>
+    </svg>
+  </div>
+
+  <main>
+    <div class="hero-headline" id="hero-headline">Loading this week's pulse...</div>
+    <div class="hero-subtitle" id="hero-subtitle"></div>
+
+    <div class="vitals-row" id="vitals-row"></div>
+
+    <div class="card">
+      <div class="card-title">Weekly Summary</div>
+      <div class="card-subtitle">AI-generated narrative from everything processed this week</div>
+      <div id="summary" class="summary-text">Loading...</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Category Breakdown</div>
+        <div class="card-subtitle">What kind of feedback is coming in</div>
+        <div id="categories"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sentiment Breakdown</div>
+        <div class="card-subtitle">Positive, neutral, or negative tone</div>
+        <div id="sentiment"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Top Themes</div>
+      <div class="card-subtitle">Recurring, specific issues across all feedback</div>
+      <div id="themes"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Flagged for Review</div>
+      <div class="card-subtitle">Low-confidence classifications or non-English content needing a human look</div>
+      <div id="flagged"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">All Feedback</div>
+      <div class="card-subtitle" id="table-subtitle"></div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Text</th><th>Category</th><th>Sentiment</th><th>Urgency</th><th>Themes</th></tr>
+          </thead>
+          <tbody id="feedback-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+<script>
+// API_BASE points at the local Flask server. This dashboard is a
+// standalone file (opened via file:// or a static host), not served by
+// Flask itself -- CORS on the API side (flask-cors) is what makes this
+// cross-origin fetch actually work in the browser.
+const API_BASE = "http://127.0.0.1:5000";
+
+// Escaping helper: feedback text, AI summaries, and theme labels all
+// ultimately trace back to user-submitted text. Anything inserted via
+// innerHTML goes through this first, so a feedback item containing
+// something like "<img onerror=alert(1)>" renders as inert text instead
+// of executing.
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+
+function urgencyBadgeClass(urgency) {
+  if (urgency === "High") return "urg-high";
+  if (urgency === "Medium") return "urg-medium";
+  return "urg-low";
+}
+function sentimentBadgeClass(sentiment) {
+  if (sentiment === "Positive") return "sent-positive";
+  if (sentiment === "Negative") return "sent-negative";
+  return "sent-neutral";
+}
+
+function renderBarList(containerId, counts) {
+  const container = document.getElementById(containerId);
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">No data yet.</p>';
+    return;
+  }
+  const max = Math.max(...entries.map(([, v]) => v));
+  container.innerHTML = entries.map(([label, count]) => {
+    const pct = max > 0 ? (count / max) * 100 : 0;
+    return `<div class="bar-row">
+      <div class="bar-label">${escapeHtml(label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="bar-value">${count}</div>
+    </div>`;
+  }).join("");
+}
+
+// Draws the header waveform. avgSentiment ranges -1..1. Positive scores
+// draw a calm, shallow, teal-colored wave; negative scores draw a
+// sharper, higher-amplitude, red-tinted wave -- a real readout of the
+// data, not a fixed decoration.
+function drawPulseWave(avgSentiment) {
+  const path = document.getElementById("pulse-path");
+  const width = 1200, midY = 32;
+  const amplitude = 6 + Math.abs(avgSentiment) * 22;
+  const spikiness = avgSentiment < 0 ? 3 : 1.2; // sharper peaks when negative
+  const segments = 24;
+  let d = `M0,${midY}`;
+  for (let i = 1; i <= segments; i++) {
+    const x = (width / segments) * i;
+    const isBeat = i % 4 === 0;
+    const y = isBeat ? midY - amplitude * spikiness * (i % 8 === 0 ? 1 : -1) : midY + (Math.random() - 0.5) * 3;
+    d += ` L${x.toFixed(1)},${y.toFixed(1)}`;
+  }
+  path.setAttribute("d", d);
+  path.setAttribute("stroke", avgSentiment < -0.15 ? "#FF6B6B" : avgSentiment > 0.15 ? "#34E5C3" : "#F5A623");
+}
+
+function buildHeadline(records) {
+  const total = records.length;
+  if (total === 0) return { headline: "No feedback processed yet.", subtitle: "Run the pipeline on a batch of feedback to populate this dashboard." };
+
+  const urgent = records.filter(r => r.urgency === "High").length;
+  const negative = records.filter(r => r.sentiment === "Negative").length;
+  const flagged = records.filter(r => r.flagged_for_review).length;
+  const pctNegative = Math.round((negative / total) * 100);
+
+  const themeCounts = {};
+  records.forEach(r => (r.themes || []).forEach(t => { themeCounts[t] = (themeCounts[t] || 0) + 1; }));
+  const topTheme = Object.entries(themeCounts).sort((a, b) => b[1] - a[1])[0];
+
+  let headline = `${total} pieces of feedback this week — ${pctNegative}% negative.`;
+  if (urgent > 0) {
+    headline += ` ${urgent} item${urgent === 1 ? "" : "s"} need${urgent === 1 ? "s" : ""} immediate attention.`;
+  }
+  let subtitle = topTheme
+    ? `Most common issue: "${topTheme[0]}" (${topTheme[1]} mention${topTheme[1] === 1 ? "" : "s"}).`
+    : "No recurring themes identified yet.";
+  if (flagged > 0) {
+    subtitle += ` ${flagged} item${flagged === 1 ? "" : "s"} flagged for human review.`;
+  }
+  return { headline, subtitle };
+}
+
+async function loadDashboard() {
+  const heroHeadline = document.getElementById("hero-headline");
+  const heroSubtitle = document.getElementById("hero-subtitle");
+  const summaryEl = document.getElementById("summary");
+
+  try {
+    const [feedbackRes, summaryRes] = await Promise.all([
+      fetch(`${API_BASE}/api/feedback`),
+      fetch(`${API_BASE}/api/summary/weekly`),
+    ]);
+
+    if (!feedbackRes.ok || !summaryRes.ok) {
+      throw new Error(`API returned an error (feedback: ${feedbackRes.status}, summary: ${summaryRes.status})`);
+    }
+
+    const records = await feedbackRes.json();
+    const summaryData = await summaryRes.json();
+
+    document.getElementById("last-updated-text").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+
+    if (records.length === 0) {
+      heroHeadline.textContent = "No feedback processed yet.";
+      heroSubtitle.innerHTML = `Run the pipeline on a batch of feedback, then click <strong>Refresh</strong> above.`;
+      document.getElementById("vitals-row").innerHTML = "";
+      summaryEl.textContent = summaryData.summary || "Nothing to summarize yet.";
+      ["categories", "sentiment", "themes"].forEach(id => renderBarList(id, {}));
+      document.getElementById("flagged").innerHTML = '<p style="color:var(--muted); font-size:0.85rem;">Nothing flagged yet.</p>';
+      document.getElementById("feedback-table-body").innerHTML = "";
+      document.getElementById("table-subtitle").textContent = "";
+      drawPulseWave(0);
+      return;
+    }
+
+    const { headline, subtitle } = buildHeadline(records);
+    heroHeadline.textContent = headline;
+    heroSubtitle.textContent = subtitle;
+
+    const avgSentiment = records.reduce((sum, r) => sum + r.sentiment_score, 0) / records.length;
+    drawPulseWave(avgSentiment);
+
+    const urgentCount = records.filter(r => r.urgency === "High").length;
+    const flaggedCount = records.filter(r => r.flagged_for_review).length;
+
+    document.getElementById("vitals-row").innerHTML = `
+      <div class="vital-tile" style="--tile-accent:#34E5C3;"><div class="vital-value">${records.length}</div><div class="vital-label">Total Feedback</div></div>
+      <div class="vital-tile" style="--tile-accent:${avgSentiment < 0 ? '#FF6B6B' : '#34E5C3'};"><div class="vital-value">${avgSentiment.toFixed(2)}</div><div class="vital-label">Avg Sentiment (-1 to 1)</div></div>
+      <div class="vital-tile" style="--tile-accent:#FF6B6B;"><div class="vital-value">${urgentCount}</div><div class="vital-label">High Urgency</div></div>
+      <div class="vital-tile" style="--tile-accent:#F5A623;"><div class="vital-value">${flaggedCount}</div><div class="vital-label">Flagged for Review</div></div>
+    `;
+
+    summaryEl.innerHTML = escapeHtml(summaryData.summary || "No summary available.");
+
+    const categoryCounts = {};
+    const sentimentCounts = {};
+    const themeCounts = {};
+    records.forEach(r => {
+      categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1;
+      sentimentCounts[r.sentiment] = (sentimentCounts[r.sentiment] || 0) + 1;
+      (r.themes || []).forEach(t => { themeCounts[t] = (themeCounts[t] || 0) + 1; });
+    });
+    renderBarList("categories", categoryCounts);
+    renderBarList("sentiment", sentimentCounts);
+    renderBarList("themes", themeCounts);
+
+    const flaggedRecords = records.filter(r => r.flagged_for_review);
+    const flaggedDiv = document.getElementById("flagged");
+    flaggedDiv.innerHTML = flaggedRecords.length === 0
+      ? '<p style="color:var(--muted); font-size:0.85rem;">Nothing flagged right now.</p>'
+      : flaggedRecords.map(r => `
+          <div class="flagged-item">
+            <div class="flagged-text">"${escapeHtml(r.text.slice(0, 140))}"</div>
+            <div class="flagged-reason">${escapeHtml(r.review_reason || "Flagged for review")}</div>
+          </div>
+        `).join("");
+
+    document.getElementById("table-subtitle").textContent = `${records.length} item${records.length === 1 ? "" : "s"}, most recent first`;
+    document.getElementById("feedback-table-body").innerHTML = records.slice().reverse().map(r => `
+      <tr>
+        <td class="text-cell" title="${escapeHtml(r.text)}">${escapeHtml(r.text)}</td>
+        <td><span class="badge cat">${escapeHtml(r.category)}</span></td>
+        <td><span class="badge ${sentimentBadgeClass(r.sentiment)}">${escapeHtml(r.sentiment)}</span></td>
+        <td><span class="badge ${urgencyBadgeClass(r.urgency)}">${escapeHtml(r.urgency)}</span></td>
+        <td>${(r.themes || []).map(t => `<span class="badge cat">${escapeHtml(t)}</span>`).join("") || "—"}</td>
+      </tr>
+    `).join("");
+
+  } catch (err) {
+    heroHeadline.textContent = "Couldn't load the pulse.";
+    heroSubtitle.innerHTML = "";
+    summaryEl.innerHTML = `<div class="error-banner">Couldn't reach the API: <code>${escapeHtml(err.message)}</code>. Make sure <code>python -m api.app</code> is running, and that it's reachable at <code>${API_BASE}</code>.</div>`;
+    document.getElementById("vitals-row").innerHTML = "";
+    drawPulseWave(0);
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
