@@ -145,7 +145,12 @@ def _parse_response(raw: str) -> tuple[Category, float]:
     return category, confidence
 
 
-def classify_feedback(feedback: FeedbackItem, client: AIClient) -> ClassificationResult:
+def classify_feedback(
+    feedback: FeedbackItem,
+    client: AIClient,
+    escalation_client: AIClient | None = None,
+    escalation_threshold: float = 0.5,
+) -> ClassificationResult:
     """
     Classify one FeedbackItem. Never raises -- on any failure (API down,
     bad JSON, unknown category from the model, whatever shape the failure
@@ -153,6 +158,14 @@ def classify_feedback(feedback: FeedbackItem, client: AIClient) -> Classificatio
     confidence 0.0. That low confidence is the signal orchestration uses
     to flag the item for human review, rather than the pipeline crashing
     or silently pretending it classified something it didn't.
+
+    Tiered model escalation (cost control): if escalation_client is
+    provided and the PRIMARY client's confidence comes back below
+    escalation_threshold, retry once with the escalation_client (intended
+    to be a stronger, more expensive model). This means the expensive
+    model is only ever paid for on the genuinely ambiguous cases -- the
+    common, easy cases never touch it. If escalation_client is None
+    (the default), behavior is identical to before this feature existed.
     """
     # Blank input never reaches the API at all: there is nothing to
     # classify, and calling a paid model on empty text is both wasteful
@@ -163,6 +176,30 @@ def classify_feedback(feedback: FeedbackItem, client: AIClient) -> Classificatio
             feedback_id=feedback.id, category=Category.OTHER, confidence=1.0
         )
 
+    result = _classify_once(feedback, client)
+
+    if (
+        escalation_client is not None
+        and result.category != Category.OTHER  # OTHER/0.0 already means "trust nothing", escalating won't help
+        and result.confidence < escalation_threshold
+    ):
+        print(
+            f"[classifier] feedback_id={feedback.id} confidence {result.confidence} "
+            f"below threshold {escalation_threshold}, escalating to stronger model"
+        )
+        escalated = _classify_once(feedback, escalation_client)
+        # Only use the escalated result if it's actually more confident --
+        # otherwise keep the cheaper model's answer rather than blindly
+        # trusting whichever call happened second.
+        if escalated.confidence > result.confidence:
+            result = escalated
+
+    return result
+
+
+def _classify_once(feedback: FeedbackItem, client: AIClient) -> ClassificationResult:
+    """One classification attempt against one client -- the shared logic
+    used for both the primary (cheap) and escalation (strong) model calls."""
     try:
         raw = client.complete(
             system=SYSTEM_PROMPT,

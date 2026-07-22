@@ -14,6 +14,8 @@ import time
 from brain.classifier import AIClient, classify_feedback
 from brain.sentiment import score_sentiment
 from brain.theme_aggregator import extract_themes
+from brain.translator import translate_to_english
+from orchestration.alerting import send_urgent_alert
 from domain.feedback import (
     Category,
     ClassificationResult,
@@ -87,65 +89,113 @@ def _placeholder_result(
 
 
 def process_one(
-    feedback: FeedbackItem, client: AIClient, logger=print
+    feedback: FeedbackItem, client: AIClient, escalation_client: AIClient | None = None, logger=print
 ) -> ProcessedFeedback:
     """Run the full classify -> sentiment -> themes sequence for ONE item."""
 
     # Edge case: non-English input. The few-shot examples in every brain/
-    # module are English-only, so running non-English text through them
-    # wouldn't error -- it would just quietly produce an unreliable guess.
-    # Detecting and flagging is safer than pretending confidence in a
-    # result the classifier was never taught to give.
+    # module are English-only, so classifying the ORIGINAL non-English
+    # text would just quietly produce an unreliable guess. Instead of
+    # skipping it entirely, translate to English first, then run the
+    # normal pipeline on the translation. Still flagged for review
+    # afterward -- not because it was skipped, but because translation
+    # quality is a real, honest extra source of uncertainty worth a
+    # human spot-check.
+    working_feedback = feedback
+    translation_note = None
     if not feedback.is_blank:
         detected_lang = _detect_non_english(feedback.text)
         if detected_lang:
+            translated_text = translate_to_english(feedback.text, client)
+            if translated_text is None:
+                # Translation itself failed -- fall back to the old,
+                # honest skip behavior rather than classifying gibberish
+                # or the untranslated original.
+                logger(
+                    f"[pipeline] feedback_id={feedback.id} flagged: "
+                    f"detected non-English (lang={detected_lang}), translation failed"
+                )
+                return _placeholder_result(
+                    feedback,
+                    reason=f"Detected non-English content (lang={detected_lang}); "
+                    f"translation failed, not run through the classifier.",
+                )
             logger(
-                f"[pipeline] feedback_id={feedback.id} flagged: "
-                f"detected non-English content (lang={detected_lang})"
+                f"[pipeline] feedback_id={feedback.id} translated from "
+                f"lang={detected_lang} before classification"
             )
-            return _placeholder_result(
-                feedback,
-                reason=f"Detected non-English content (lang={detected_lang}); "
-                f"not run through the English-only classifier.",
+            # Build a new FeedbackItem carrying the TRANSLATED text through
+            # the rest of the pipeline, while preserving the original id/
+            # source/timestamp -- domain validation (length cap, etc.)
+            # still applies to the translated text like any other input.
+            working_feedback = FeedbackItem(
+                id=feedback.id,
+                text=translated_text,
+                source=feedback.source,
+                submitted_at=feedback.submitted_at,
+            )
+            translation_note = (
+                f"Auto-translated from lang={detected_lang} before classification; "
+                f"verify translation accuracy."
             )
 
     step_times = {}
 
     t0 = time.perf_counter()
-    classification = classify_feedback(feedback, client)
+    classification = classify_feedback(working_feedback, client, escalation_client=escalation_client)
     step_times["classify"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    sentiment = score_sentiment(feedback, client)
+    sentiment = score_sentiment(working_feedback, client)
     step_times["sentiment"] = time.perf_counter() - t0
 
     t0 = time.perf_counter()
-    themes = extract_themes(feedback, client)
+    themes = extract_themes(working_feedback, client)
     step_times["themes"] = time.perf_counter() - t0
 
     rounded_timings = {k: round(v, 3) for k, v in step_times.items()}
     logger(f"[pipeline] feedback_id={feedback.id} timings={rounded_timings}")
 
-    flagged = classification.confidence < LOW_CONFIDENCE_THRESHOLD
-    reason = (
-        f"Low classifier confidence ({classification.confidence}); needs human review."
-        if flagged
-        else None
-    )
+    total_ms = sum(step_times.values()) * 1000  # perf_counter deltas are in seconds
+
+    low_confidence = classification.confidence < LOW_CONFIDENCE_THRESHOLD
+    flagged = low_confidence or translation_note is not None
+    reason_parts = []
+    if translation_note:
+        reason_parts.append(translation_note)
+    if low_confidence:
+        reason_parts.append(f"Low classifier confidence ({classification.confidence}); needs human review.")
+    reason = " ".join(reason_parts) if reason_parts else None
+
+    if sentiment.urgency == Urgency.HIGH:
+        # Best-effort: send_urgent_alert() itself never raises, and is a
+        # silent no-op if no webhook URL is configured. This never blocks
+        # or delays returning the result -- a failed notification should
+        # never be the reason feedback processing appears to hang.
+        send_urgent_alert(
+            feedback_id=feedback.id,
+            category=classification.category.value,
+            text=feedback.text,
+        )
 
     return ProcessedFeedback(
-        feedback=feedback,
+        feedback=feedback,  # ORIGINAL feedback (untranslated text) -- this is what
+                            # the customer actually wrote; the translation was an
+                            # internal step to make classification possible, not a
+                            # replacement for the real record.
         classification=classification,
         sentiment=sentiment,
         themes=themes,
         flagged_for_review=flagged,
         review_reason=reason,
+        processing_time_ms=total_ms,
     )
 
 
 def run_pipeline(
     feedback_items: list[FeedbackItem],
     client: AIClient,
+    escalation_client: AIClient | None = None,
     save: bool = True,
     store_path=None,
     logger=print,
@@ -166,7 +216,7 @@ def run_pipeline(
 
     for item in feedback_items:
         try:
-            processed = process_one(item, client, logger=logger)
+            processed = process_one(item, client, escalation_client=escalation_client, logger=logger)
         except Exception as e:
             # This should be unreachable -- every brain/*.py function is
             # written to never raise. It exists anyway as an orchestration-

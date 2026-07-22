@@ -37,7 +37,7 @@ generic filler like "customers had mixed feelings" -- be specific and
 grounded in the actual numbers and themes given to you."""
 
 
-def _compute_stats(processed_items: list[ProcessedFeedback]) -> dict:
+def _compute_stats(processed_items: list[ProcessedFeedback], embedding_client=None) -> dict:
     """
     Turn a list of ProcessedFeedback into the plain aggregate numbers the
     summary prompt needs. Pure computation, no AI call -- deterministic
@@ -54,7 +54,7 @@ def _compute_stats(processed_items: list[ProcessedFeedback]) -> dict:
     ]
 
     all_theme_tags = [tag for p in processed_items for tag in p.themes]
-    top_themes = aggregate_themes(all_theme_tags)[:5]  # top 5 is plenty for a prompt
+    top_themes = aggregate_themes(all_theme_tags, embedding_client=embedding_client)[:5]  # top 5 is plenty for a prompt
 
     return {
         "total_items": len(processed_items),
@@ -104,20 +104,24 @@ def _fallback_summary(stats: dict) -> str:
 
 
 def generate_weekly_summary(
-    processed_items: list[ProcessedFeedback], client: AIClient
+    processed_items: list[ProcessedFeedback], client: AIClient, embedding_client=None
 ) -> str:
     """
     Generate the weekly narrative summary. Never raises -- on API failure,
     falls back to a plain templated summary rather than crashing or
     returning nothing, since this is often the single artifact a
     stakeholder actually reads.
+
+    embedding_client, if provided, enables real semantic clustering (via
+    aggregate_themes) for the top-themes figure fed into the prompt,
+    instead of the default string-similarity clustering.
     """
     if not processed_items:
         # No feedback processed this week is a normal, expected state
         # (e.g. a slow week, or the very first run) -- not an error.
         return "No feedback was processed this week. Nothing to summarize yet."
 
-    stats = _compute_stats(processed_items)
+    stats = _compute_stats(processed_items, embedding_client=embedding_client)
 
     try:
         summary = client.complete(

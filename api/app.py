@@ -20,8 +20,10 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 from brain.classifier import AnthropicClient, OpenAIClient
+from brain.pii_redactor import redact_pii
 from brain.summary_generator import generate_weekly_summary
-from domain.feedback import FeedbackItem
+from brain.theme_aggregator import OpenAIEmbeddingClient, aggregate_themes
+from domain.feedback import FeedbackItem, ThemeTag
 from orchestration.pipeline import run_pipeline
 from persistence import store as persistence_store
 
@@ -106,6 +108,68 @@ def _set_client_for_testing(client) -> None:
     _client = client
 
 
+# --- Escalation client (tiered model cost control) --------------------
+_escalation_client = None
+_escalation_client_checked = False
+
+
+def _get_escalation_client():
+    """
+    Construct a STRONGER, pricier model to escalate to on low-confidence
+    classifications. Only implemented for OpenAI right now (cheap
+    gpt-4o-mini -> stronger gpt-4o) -- there's no verified stronger
+    Anthropic model string in this codebase to safely guess at, so when
+    only ANTHROPIC_API_KEY is set, this returns None and tiered
+    escalation is simply not active. That's an honest, documented
+    limitation, not a silent failure: classify_feedback() treats a None
+    escalation_client as "don't escalate," identical to before this
+    feature existed.
+    """
+    global _escalation_client, _escalation_client_checked
+    if not _escalation_client_checked:
+        _escalation_client_checked = True
+        if os.environ.get("OPENAI_API_KEY"):
+            _escalation_client = OpenAIClient(model="gpt-4o")
+    return _escalation_client
+
+
+def _set_escalation_client_for_testing(client) -> None:
+    """TEST-ONLY hook, same reasoning as _set_client_for_testing above."""
+    global _escalation_client, _escalation_client_checked
+    _escalation_client = client
+    _escalation_client_checked = True
+
+
+# --- Embedding client (semantic theme clustering) ----------------------
+_embedding_client = None
+_embedding_client_checked = False
+
+
+def _get_embedding_client():
+    """
+    Construct an embeddings client for semantic theme clustering. Only
+    implemented for OpenAI right now. Returns None if no OPENAI_API_KEY
+    is set -- callers treat a None embedding_client as "fall back to
+    string-similarity clustering," not an error.
+    """
+    global _embedding_client, _embedding_client_checked
+    if not _embedding_client_checked:
+        _embedding_client_checked = True
+        if os.environ.get("OPENAI_API_KEY"):
+            _embedding_client = OpenAIEmbeddingClient()
+            print("[api] Embedding client constructed (OPENAI_API_KEY found) -- semantic theme clustering is ACTIVE")
+        else:
+            print("[api] No OPENAI_API_KEY found -- semantic theme clustering is OFF, falling back to string similarity")
+    return _embedding_client
+
+
+def _set_embedding_client_for_testing(client) -> None:
+    """TEST-ONLY hook, same reasoning as _set_client_for_testing above."""
+    global _embedding_client, _embedding_client_checked
+    _embedding_client = client
+    _embedding_client_checked = True
+
+
 def _processed_to_json(p) -> dict:
     return {
         "id": p.feedback.id,
@@ -136,14 +200,25 @@ def submit_feedback():
         ), 400
 
     items = []
+    pii_redaction_count = 0
     for row in payload:
         if not isinstance(row, dict) or "text" not in row:
             return jsonify({"error": "Each item must be an object with a 'text' field."}), 400
+
+        # PII redaction happens here, before ANYTHING else -- earlier than
+        # domain validation, earlier than persistence, earlier than any AI
+        # call. This is a regex-based baseline (emails, phone numbers,
+        # card-like numbers), not full NLP-grade PII detection -- an
+        # honest, documented limitation, not a claim of complete coverage.
+        redacted_text, pii_found = redact_pii(row["text"])
+        if pii_found:
+            pii_redaction_count += 1
+
         try:
             items.append(
                 FeedbackItem(
                     id=str(uuid.uuid4()),
-                    text=row["text"],
+                    text=redacted_text,
                     source=row.get("source", "api"),
                 )
             )
@@ -158,7 +233,10 @@ def submit_feedback():
         # Missing/invalid API key: a clear 503, not a crashed process.
         return jsonify({"error": str(e)}), 503
 
-    results = run_pipeline(items, client, save=True)
+    if pii_redaction_count > 0:
+        print(f"[api] Redacted PII from {pii_redaction_count} of {len(items)} incoming item(s)")
+
+    results = run_pipeline(items, client, escalation_client=_get_escalation_client(), save=True)
     return jsonify([_processed_to_json(r) for r in results]), 200
 
 
@@ -187,8 +265,34 @@ def weekly_summary():
         client = _get_client()
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 503
-    summary = generate_weekly_summary(records, client)
+    summary = generate_weekly_summary(records, client, embedding_client=_get_embedding_client())
     return jsonify({"summary": summary, "based_on_items": len(records)}), 200
+
+
+@app.route("/api/themes/cluster", methods=["POST"])
+def cluster_themes():
+    """
+    Accepts {"themes": ["theme string", "theme string", ...]} -- a flat
+    list with duplicates preserved (one entry per mention, not pre-
+    counted) -- and returns real clustered results using the same
+    aggregate_themes() logic that powers the weekly summary's theme
+    input. This exists so the dashboard's Top Themes display uses ACTUAL
+    clustering instead of naive exact-string-match counting in
+    JavaScript, which is what it did before this endpoint existed.
+    """
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict) or "themes" not in payload or not isinstance(payload["themes"], list):
+        return jsonify({"error": "Expected {\"themes\": [list of strings]}"}), 400
+
+    theme_tags = [
+        ThemeTag(feedback_id=str(i), theme=str(t))
+        for i, t in enumerate(payload["themes"])
+        if str(t).strip()
+    ]
+    aggregated = aggregate_themes(theme_tags, embedding_client=_get_embedding_client())
+    return jsonify([
+        {"label": a.label, "count": a.count} for a in aggregated
+    ]), 200
 
 
 @app.route("/api/health", methods=["GET"])

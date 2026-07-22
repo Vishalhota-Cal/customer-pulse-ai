@@ -149,3 +149,13 @@ class ProcessedFeedback:
     themes: list[ThemeTag] = field(default_factory=list)
     flagged_for_review: bool = False
     review_reason: str | None = None
+    # Real, measured wall-clock time (milliseconds) the orchestration layer
+    # spent on classify+sentiment+themes for this ONE item. This is what
+    # backs the business-impact "AI time vs manual time" comparison on the
+    # dashboard -- it is actual measured time, not an assumption, the same
+    # way the Manual Timing Trial in the Smart Ticket Router used real
+    # stopwatch data rather than a guess. None for items that skipped the
+    # brain layer entirely (non-English detection, unexpected pipeline
+    # errors) -- zero would misleadingly imply "instant," when the honest
+    # answer is "no AI processing happened for this item."
+    processing_time_ms: float | None = None

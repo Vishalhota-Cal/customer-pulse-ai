@@ -54,3 +54,26 @@ def test_repeated_classification_is_consistent():
     fake = ScriptedAIClient(classification_response='{"category": "Performance / Speed", "confidence": 0.85}')
     item = FeedbackItem(id="fb6", text="slow to load")
     assert classify_feedback(item, fake) == classify_feedback(item, fake)
+
+
+def test_escalation_not_called_when_primary_confidence_is_high():
+    primary = ScriptedAIClient(classification_response='{"category": "Bug / Technical Issue", "confidence": 0.95}')
+    escalation = ScriptedAIClient(classification_response='{"category": "Other / Uncategorised", "confidence": 0.5}')
+    result = classify_feedback(FeedbackItem(id="fb7", text="clear bug"), primary, escalation_client=escalation)
+    assert escalation.call_count == 0
+    assert result.category == Category.BUG
+
+
+def test_escalation_used_when_it_improves_confidence():
+    primary = ScriptedAIClient(classification_response='{"category": "Feature Request", "confidence": 0.3}')
+    escalation = ScriptedAIClient(classification_response='{"category": "Billing / Payments", "confidence": 0.9}')
+    result = classify_feedback(FeedbackItem(id="fb8", text="ambiguous"), primary, escalation_client=escalation)
+    assert escalation.call_count == 1
+    assert result.category == Category.BILLING and result.confidence == 0.9
+
+
+def test_escalation_result_discarded_if_not_actually_better():
+    primary = ScriptedAIClient(classification_response='{"category": "Feature Request", "confidence": 0.3}')
+    escalation = ScriptedAIClient(classification_response='{"category": "Other / Uncategorised", "confidence": 0.1}')
+    result = classify_feedback(FeedbackItem(id="fb9", text="ambiguous"), primary, escalation_client=escalation)
+    assert result.category == Category.FEATURE_REQUEST and result.confidence == 0.3

@@ -21,15 +21,47 @@ def test_normal_english_item_runs_full_pipeline():
     assert result.flagged_for_review is False
 
 
-def test_non_english_input_is_flagged_without_calling_brain_layer():
-    class ExplodingClient:
-        def complete(self, *a, **k):
-            raise AssertionError("brain layer should NOT be called for non-English input")
+def test_non_english_input_gets_translated_then_classified():
+    """
+    New behavior: non-English input is translated to English, then
+    actually run through classify/sentiment/themes -- not just flagged
+    and skipped. Still flagged afterward, but for a different, honest
+    reason (translation happened, worth a spot-check), and with a real
+    classification result attached instead of a placeholder.
+    """
+    class TranslatingClient:
+        def complete(self, system, user, temperature=0.0):
+            if "translator" in system.lower():
+                return "The app crashes every time I upload a profile photo."
+            if "category" in system.lower() and "sentiment" not in system.lower():
+                return '{"category": "Bug / Technical Issue", "confidence": 0.9}'
+            if "urgency" in system.lower():
+                return '{"sentiment": "Negative", "sentiment_score": -0.8, "urgency": "High"}'
+            return '["photo upload crash"]'
 
     item = FeedbackItem(id="fb2", text="La aplicacion se bloquea cada vez que subo una foto")
+    result = process_one(item, TranslatingClient(), logger=lambda msg: None)
+
+    assert result.classification.category == Category.BUG
+    assert len(result.themes) > 0
+    assert result.feedback.text == item.text  # original text preserved, not the translation
+    assert result.flagged_for_review is True
+    assert "Auto-translated" in result.review_reason
+
+
+def test_non_english_translation_failure_falls_back_to_skip():
+    """If translation itself fails (API outage, etc.), fall back to the
+    original honest skip -- never classify an untranslated or garbled text."""
+
+    class ExplodingClient:
+        def complete(self, *a, **k):
+            raise ConnectionError("simulated outage")
+
+    item = FeedbackItem(id="fb2b", text="La aplicacion se bloquea cada vez que subo una foto")
     result = process_one(item, ExplodingClient(), logger=lambda msg: None)
     assert result.flagged_for_review is True
-    assert "non-English" in result.review_reason
+    assert "translation failed" in result.review_reason
+    assert result.classification.category == Category.OTHER
 
 
 def test_low_confidence_classification_is_flagged():

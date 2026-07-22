@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Case File: Port·05 — Customer Pulse Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #14171F;
+    --ink-2: #1C202C;
+    --paper: #EFE6D0;
+    --paper-2: #E6DAB3;
+    --paper-line: rgba(20,23,31,0.12);
+    --signal: #3C8C7A;
+    --signal-dim: rgba(60,140,122,0.14);
+    --flag: #B33A32;
+    --flag-dim: rgba(179,58,50,0.14);
+    --gold: #B4863C;
+    --text-on-ink: #E9E4D4;
+    --muted-on-ink: #9A9C8F;
+    --text-on-paper: #211D14;
+    --muted-on-paper: #6B6650;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+    background: var(--ink);
+    color: var(--text-on-ink);
+    min-height: 100vh;
+  }
+  ::selection { background: var(--gold); color: var(--ink); }
+  a { color: inherit; }
+
+  /* ---------- Header / tab nav ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: linear-gradient(180deg, rgba(20,23,31,0.97), rgba(20,23,31,0.9));
+    border-bottom: 1px solid rgba(233,228,212,0.1);
+    backdrop-filter: blur(6px);
+  }
+  .topbar-inner {
+    max-width: 1080px; margin: 0 auto; padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+  }
+  .case-id {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--gold);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .case-title {
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.15rem; margin: 2px 0 0 0;
+  }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tabs a {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; text-decoration: none;
+    color: var(--muted-on-ink); padding: 7px 13px; border-radius: 999px; border: 1px solid rgba(233,228,212,0.12);
+    transition: all 0.15s ease; white-space: nowrap;
+  }
+  .tabs a:hover, .tabs a:focus-visible { color: var(--text-on-ink); border-color: var(--gold); outline: none; }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 0 28px 100px; }
+
+  /* ---------- Hero / mission brief ---------- */
+  .hero { padding: 56px 0 40px; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; color: var(--signal);
+    letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif; font-weight: 700; font-size: 2.6rem; line-height: 1.12;
+    margin: 0 0 18px 0; max-width: 720px; letter-spacing: -0.01em;
+  }
+  .hero h1 em { color: var(--signal); font-style: italic; }
+  .hero p.lede { color: var(--muted-on-ink); font-size: 1.05rem; line-height: 1.65; max-width: 620px; }
+
+  .directive-card {
+    background: var(--paper); color: var(--text-on-paper); border-radius: 4px;
+    padding: 26px 30px; margin-top: 30px; position: relative;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    border-left: 5px solid var(--flag);
+  }
+  .directive-card .stamp {
+    position: absolute; top: -14px; right: 22px; background: var(--flag); color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.1em;
+    padding: 5px 12px; border-radius: 3px; transform: rotate(3deg); text-transform: uppercase;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  .directive-card ol { margin: 4px 0 0 0; padding-left: 22px; }
+  .directive-card li { margin-bottom: 9px; line-height: 1.5; font-size: 0.95rem; }
+  .directive-card li:last-child { margin-bottom: 0; }
+
+  /* ---------- Section shell ---------- */
+  section.dossier-section { padding: 56px 0; border-top: 1px solid rgba(233,228,212,0.08); }
+  .section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; flex-wrap: wrap; }
+  .section-num { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-size: 0.9rem; }
+  .section-head h2 { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.7rem; margin: 0; }
+  .section-sub { color: var(--muted-on-ink); font-size: 0.95rem; max-width: 640px; margin: 6px 0 32px 0; line-height: 1.6; }
+
+  /* ---------- Index cards (pain points) ---------- */
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .index-card {
+    background: var(--paper); color: var(--text-on-paper); border-radius: 3px;
+    padding: 20px 22px 22px; position: relative; box-shadow: 0 10px 26px rgba(0,0,0,0.28);
+    transform: rotate(var(--tilt, 0deg));
+  }
+  .index-card:nth-child(3n+1) { --tilt: -0.6deg; }
+  .index-card:nth-child(3n+2) { --tilt: 0.5deg; }
+  .index-card:nth-child(3n)   { --tilt: -0.3deg; }
+  .index-card::before {
+    content: ""; position: absolute; top: -8px; left: 26px; width: 46px; height: 16px;
+    background: rgba(180,134,60,0.55); border: 1px solid rgba(180,134,60,0.7);
+    transform: rotate(-2deg);
+  }
+  .index-card .tag {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem;
+    color: var(--flag); border: 1px solid var(--flag); border-radius: 999px; padding: 2px 9px;
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+  .index-card h3 { font-family: 'Fraunces', serif; font-size: 1.08rem; font-weight: 700; margin: 0 0 8px 0; }
+  .index-card p { font-size: 0.87rem; line-height: 1.55; color: var(--muted-on-paper); margin: 0; }
+
+  /* ---------- Gap comparison table ---------- */
+  .gap-table { display: flex; flex-direction: column; gap: 10px; }
+  .gap-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-radius: 8px; overflow: hidden;
+    border: 1px solid rgba(233,228,212,0.1);
+  }
+  .gap-cell { padding: 16px 20px; font-size: 0.87rem; line-height: 1.55; }
+  .gap-cell.does { background: rgba(233,228,212,0.04); color: var(--muted-on-ink); }
+  .gap-cell.missing { background: var(--flag-dim); color: var(--text-on-ink); border-left: 1px solid rgba(233,228,212,0.1); }
+  .gap-cell .label {
+    display: block; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 6px;
+  }
+  .gap-cell.does .label { color: var(--muted-on-ink); }
+  .gap-cell.missing .label { color: var(--flag); }
+
+  /* ---------- Tooling map ---------- */
+  .tool-row {
+    display: grid; grid-template-columns: 1fr 1.3fr 1.3fr; gap: 18px; padding: 18px 0;
+    border-bottom: 1px solid rgba(233,228,212,0.08); align-items: start;
+  }
+  .tool-row:last-child { border-bottom: none; }
+  .tool-row .col-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--gold); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .tool-row .problem { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1rem; color: var(--text-on-ink); }
+  .tool-row .tool-name { font-weight: 600; font-size: 0.9rem; color: var(--signal); margin-bottom: 4px; }
+  .tool-row p { font-size: 0.85rem; line-height: 1.55; color: var(--muted-on-ink); margin: 0; }
+  .tool-header-row {
+    display: grid; grid-template-columns: 1fr 1.3fr 1.3fr; gap: 18px; padding-bottom: 10px;
+    border-bottom: 1px solid rgba(233,228,212,0.2);
+  }
+  .tool-header-row span { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; color: var(--muted-on-ink); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ---------- Q&A cheat notes ---------- */
+  .qa-stack { display: flex; flex-direction: column; gap: 14px; }
+  .qa-item {
+    background: rgba(233,228,212,0.05); border: 1px solid rgba(233,228,212,0.1); border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .qa-item .q { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--gold); margin-bottom: 8px; }
+  .qa-item .a { font-size: 0.9rem; line-height: 1.6; color: var(--text-on-ink); }
+
+  footer {
+    max-width: 1080px; margin: 0 auto; padding: 30px 28px 60px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--muted-on-ink);
+    border-top: 1px solid rgba(233,228,212,0.08);
+  }
+
+  @media (max-width: 760px) {
+    .card-grid { grid-template-columns: 1fr; }
+    .gap-row { grid-template-columns: 1fr; }
+    .gap-cell.missing { border-left: none; border-top: 1px solid rgba(233,228,212,0.1); }
+    .tool-row, .tool-header-row { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .index-card { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <div class="case-id">Case No. Odyssey / Port·05</div>
+        <div class="case-title">Customer Pulse Intelligence — Field Reference</div>
+      </div>
+      <nav class="tabs">
+        <a href="#brief">Mission</a>
+        <a href="#pain-points">Pain Points</a>
+        <a href="#gaps">Platform Gaps</a>
+        <a href="#tooling">Tooling Map</a>
+        <a href="#cheat-notes">Cheat Notes</a>
+      </nav>
+    </div>
+  </div>
+
+  <main>
+    <section class="hero" id="brief">
+      <div class="eyebrow">Field Reference — Read Before Demo Day</div>
+      <h1>The feedback pile is <em>infinite</em>.<br>The reading time is not.</h1>
+      <p class="lede">This is the working file for Port·05: what the mission actually asked for, what real companies run into at global scale, where today's tools quietly fall short, and the advanced instruments that close each gap.</p>
+
+      <div class="directive-card">
+        <span class="stamp">The Brief</span>
+        <ol>
+          <li>Product/CX teams get hundreds of reviews, tickets, and survey responses weekly — too much to read manually.</li>
+          <li>Build a system that auto-categorizes every piece of feedback.</li>
+          <li>Detect sentiment on each item.</li>
+          <li>Surface recurring, specific themes across all of it — not vague buckets.</li>
+          <li>Generate a weekly insight summary, test on real samples, document accuracy, and submit the repo.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="dossier-section" id="pain-points">
+      <div class="section-head"><span class="section-num">01</span><h2>Real-World Pain Points</h2></div>
+      <p class="section-sub">What CX and product teams actually run into, at companies operating far beyond a 34-row sample file.</p>
+
+      <div class="card-grid">
+        <div class="index-card">
+          <span class="tag">Volume</span>
+          <h3>Feedback overload</h3>
+          <p>Large consumer apps see thousands of reviews and tickets weekly, across dozens of channels. Nobody on the team has time to read it all — the backlog just grows.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Language</span>
+          <h3>English-first tooling, non-English world</h3>
+          <p>Most feedback-analytics builds — including early versions of this one — are tuned on English. Globally, most customer feedback isn't in English at all.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Nuance</span>
+          <h3>Sarcasm and cultural tone</h3>
+          <p>"Oh great, another update that broke everything" reads as positive to a naive model. Irony is culturally specific and remains genuinely unsolved.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Follow-through</span>
+          <h3>The insight-to-action gap</h3>
+          <p>Teams get a nice weekly chart, and nothing changes after. Dashboards rarely connect an insight to an owner, a status, or a deadline.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Privacy</span>
+          <h3>PII hiding in plain text</h3>
+          <p>Real feedback often contains emails, order numbers, even partial payment details. Sending raw text to a third-party AI API risks GDPR, LGPD, and CCPA exposure.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Cost</span>
+          <h3>Scale breaks the naive approach</h3>
+          <p>Three sequential AI calls per item is fine at dozens of items. At fifty thousand a week, that's 150,000 calls — and a very different bill.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Drift</span>
+          <h3>Models go stale quietly</h3>
+          <p>Slang, products, and customer language shift. Without periodic re-validation, "what counts as urgent" silently drifts and nobody notices.</p>
+        </div>
+        <div class="index-card">
+          <span class="tag">Signal loss</span>
+          <h3>Alert fatigue</h3>
+          <p>Flag too cautiously and "urgent" gets attached to everything. Once every item looks urgent, the label stops meaning anything to the team.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="dossier-section" id="gaps">
+      <div class="section-head"><span class="section-num">02</span><h2>What Existing Platforms Miss</h2></div>
+      <p class="section-sub">What most commercial feedback tools actually do, next to what they conspicuously leave out.</p>
+
+      <div class="gap-table">
+        <div class="gap-row">
+          <div class="gap-cell does"><span class="label">What most tools do</span>Classify and score each ticket individually, one at a time.</div>
+          <div class="gap-cell missing"><span class="label">What's missing</span>Cross-item theme clustering and trend-over-time — the aggregate pattern, not just the single ticket.</div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-cell does"><span class="label">What most tools do</span>Render a static dashboard of counts and charts.</div>
+          <div class="gap-cell missing"><span class="label">What's missing</span>Ownership and workflow tracking — a way to mark "we're fixing this" and see it through.</div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-cell does"><span class="label">What most tools do</span>Ship NLP tuned overwhelmingly for English text.</div>
+          <div class="gap-cell missing"><span class="label">What's missing</span>The same rigor — few-shot examples, confidence calibration — applied to non-English feedback, not just a flag-and-skip.</div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-cell does"><span class="label">What most tools do</span>Surface a single AI-generated health or sentiment score.</div>
+          <div class="gap-cell missing"><span class="label">What's missing</span>A documented, inspectable formula — executives trusting a number they can't see the math behind is a real adoption blocker.</div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-cell does"><span class="label">What most tools do</span>Require manual CSV export/import between systems.</div>
+          <div class="gap-cell missing"><span class="label">What's missing</span>Native connectors to where feedback actually lives — app store reviews, ticketing systems, survey tools — wired in out of the box.</div>
+        </div>
+        <div class="gap-row">
+          <div class="gap-cell does"><span class="label">What most tools do</span>Bill flatly per seat or per month, cost hidden from the user.</div>
+          <div class="gap-cell missing"><span class="label">What's missing</span>Visibility into what each AI call actually costs, so usage can be tiered and controlled as volume grows.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="dossier-section" id="tooling">
+      <div class="section-head"><span class="section-num">03</span><h2>Advanced Tooling Map</h2></div>
+      <p class="section-sub">Where each real-world gap gets closed, and specifically where it would slot into this codebase's layers.</p>
+
+      <div class="tool-header-row">
+        <span>Problem</span><span>Advanced Tool / Technique</span><span>Where It Fits Here</span>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">Multilingual coverage</div>
+        <div><div class="tool-name">Translation API or multilingual embeddings</div><p>Google Cloud Translation, Amazon Translate, or multilingual embedding models (Cohere Embed, OpenAI text-embedding-3).</p></div>
+        <p>Replace the current "detect non-English and flag" step in <code>orchestration/pipeline.py</code> with a translate-then-classify path, so non-English feedback gets real analysis instead of a skip.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">True semantic theme clustering</div>
+        <div><div class="tool-name">Embeddings + vector database</div><p>pgvector, Pinecone, Weaviate, or Chroma for real semantic similarity, beyond string matching.</p></div>
+        <p>Swap <code>brain/theme_aggregator.py</code>'s <code>difflib</code> string-similarity clustering for embedding-based clustering once volume outgrows a few hundred items a week.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">Sarcasm and tone nuance</div>
+        <div><div class="tool-name">Chain-of-thought prompting / tone-specific fine-tunes</div><p>A reasoning pass that explicitly checks "is this sarcastic before scoring," or a sentiment model fine-tuned on ironic text.</p></div>
+        <p>Extend <code>brain/sentiment.py</code>'s few-shot set with deliberately ironic examples, or add a second-pass tone check before the final score.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">PII exposure</div>
+        <div><div class="tool-name">PII detection & redaction</div><p>Microsoft Presidio, AWS Comprehend PII detection.</p></div>
+        <p>Insert a redaction pass in the domain layer's validation step, before text ever reaches an external AI client.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">Cost at real scale</div>
+        <div><div class="tool-name">Tiered models & prompt caching</div><p>A cheap/small model for first-pass triage; an expensive model only for ambiguous, low-confidence cases. Anthropic prompt caching for repeated system prompts.</p></div>
+        <p>Add tiered model selection to the <code>AIClient</code> construction in <code>brain/classifier.py</code>, escalating only when confidence is low.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">Model drift</div>
+        <div><div class="tool-name">MLOps observability</div><p>Arize, LangSmith, or Weights & Biases, tracking confidence-score distributions over time.</p></div>
+        <p>Log every classification's confidence to a metrics store; alert when the rolling average confidence drifts downward.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">No live alerting</div>
+        <div><div class="tool-name">Webhook / notification integrations</div><p>Slack API, PagerDuty, or an email digest via SendGrid.</p></div>
+        <p>Fire a webhook from <code>orchestration/pipeline.py</code> whenever a new High-urgency item is saved, instead of requiring someone to check the dashboard.</p>
+      </div>
+
+      <div class="tool-row">
+        <div class="problem">Fragmented data sources</div>
+        <div><div class="tool-name">Native connectors / iPaaS</div><p>Direct API ingestion from ticketing systems, app store review APIs, survey tools — or Zapier/Make for a no-code version.</p></div>
+        <p>New ingestion adapters that all feed the existing <code>/api/feedback</code> endpoint — the API doesn't care whether data came from a CSV, a script, or another system's live feed.</p>
+      </div>
+    </section>
+
+    <section class="dossier-section" id="cheat-notes">
+      <div class="section-head"><span class="section-num">04</span><h2>Cheat Notes for Demo Day</h2></div>
+      <p class="section-sub">Fast, honest answers to the questions most likely to come up.</p>
+
+      <div class="qa-stack">
+        <div class="qa-item">
+          <div class="q">Q: Is this ready for global, enterprise-scale feedback volume?</div>
+          <div class="a">Honestly, not yet. It's built and proven correct at demo scale. Getting to enterprise scale needs three specific things: real multilingual handling (not just detect-and-flag), tiered/cheaper models to control cost, and PII redaction before anything reaches an external API.</div>
+        </div>
+        <div class="qa-item">
+          <div class="q">Q: What's the single biggest gap versus a commercial tool?</div>
+          <div class="a">Workflow ownership. This surfaces what's wrong very well; it doesn't yet track who's fixing it or whether a flagged theme actually got resolved over time — beyond the basic Open/In Progress/Resolved status now in place.</div>
+        </div>
+        <div class="qa-item">
+          <div class="q">Q: Why does the system flag non-English input instead of just classifying it anyway?</div>
+          <div class="a">The few-shot examples in every prompt are English-only. Classifying a language the model was never shown examples of would mean confidently guessing — flagging it for a human is the safer, more honest failure mode.</div>
+        </div>
+        <div class="qa-item">
+          <div class="q">Q: How would you prove this works on real-world data, not just the sample set?</div>
+          <div class="a">Run it against a real, messy, mostly non-English dataset (e.g. the Olist Brazilian e-commerce reviews) — it's a fair stress test that would honestly reveal both the system's real strength (refusing to guess at an untrained language) and its current real limitation (English-only classification).</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    PulseAI — Port·05 Field Reference. Prepared for demo-day prep, not for redistribution as a finished product spec.
+  </footer>
+
+</body>
+</html>
